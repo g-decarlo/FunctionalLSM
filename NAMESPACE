@@ -1,0 +1,4 @@
+useDynLib(LocallyStationaryModels)
+import(RcppEigen)
+importFrom(Rcpp, evalCpp)
+export("smooth.lsm","plot.lsm","plotgrid","plotvario","cv.lsm","findsolutions.lsm", "predict.lsm", "find_anchorpoints.lsm", "plot.parameters", "variogram.lsm")

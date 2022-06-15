@@ -1,0 +1,18 @@
+Package: LocallyStationaryModels
+Type: Package
+Title: R package for the estimation of locally stationary models for spatial data
+Version: 1.0
+Date: 2021-09-09
+Authors@R: c(person("Luca", "Crippa", role = c("aut", "cre"), 
+                    email = "luca7.crippa@mail.polimi.it"), 
+             person("Giacomo", "De Carlo", role = "aut", 
+                    email = "giacomo.decarlo@mail.polimi.it"))
+Description: C++ implementation of the Fouedjio method for covariance estimation of non-stationary spatial random processes
+License: What license is it under?
+Imports: Rcpp, RcppEigen, ggplot2, ggforce, cowplot
+LinkingTo: Rcpp, RcppEigen, ggplot2, ggforce, cowplot
+NeedCompilation: yes
+Depends: 
+    R (>= 2.10)
+RoxygenNote: 7.1.2
+LazyData: true
