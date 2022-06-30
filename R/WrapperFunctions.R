@@ -29,11 +29,11 @@
 #' solu <- findsolutions.lsm(vario, "exponential", c(200,200,0.01,100))
 findsolutions.lsm<-function(vario, id, initial.position, lower.bound = rep(1e-8,length(initial.position)), upper.bound = c(c(Inf,Inf,pi/2), rep(Inf, length(initial.position)-3)), lower.delta = 0.1, upper.delta = 10, remove_not_convergent = FALSE, print_output = TRUE, n_threads = -1)
 { 
-  if(grepl("maternNuFixed", id, fixed = TRUE))
+  if(grepl("maternNuFixed", id[1], fixed = TRUE))
   {
     id_check <- "maternNuFixed"
   }
-  else if(grepl("maternNuNugget", id, fixed = TRUE))
+  else if(grepl("maternNuNugget", id[1], fixed = TRUE))
   {
     id_check <- "maternNuNugget"
   }

@@ -30,12 +30,16 @@ double TargetFunction::operator()(const cd::vector& params, const size_t& r)
     matrix truegamma(rows, m_dim);
     matrix empiricgamma = m_empiricvariogram->block(0,m_x0*m_dim,rows,m_dim);
     std::vector<vector> paramvec;
-    paramvec.push_back(params);
+    unsigned n_params = 3; //TODO Fix variable number of parameters as a member of variogram function
+    for (size_t i = 0, totparams = 0; i < r; i++ ){
+        
+        paramvec.push_back(params.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+        totparams += n_params + m_dim*(m_dim+1)/2;
+    }
     for (size_t h = 0; h < rows/m_dim ; ++h) {
         truegamma.block(h*m_dim,0,m_dim,m_dim) = sqrt(w[h])*m_crosscov(paramvec, m_mean_x->operator[](h), m_mean_y->operator[](h));
         empiricgamma.block(h*m_dim,0,m_dim,m_dim) *= sqrt(w[h]);
     }
-    
     return (truegamma - empiricgamma).squaredNorm();
 }
 
@@ -79,7 +83,11 @@ double TargetFunction::operator()(const cd::vector& params, vector& grad, const 
     matrix truegamma(rows, m_dim);
     matrix empiricgamma = m_empiricvariogram->block(0,m_x0*m_dim,rows,m_dim);
     std::vector<vector> paramvec;
-    paramvec.push_back(params);
+    unsigned n_params = 3; //TODO Fix variable number of parameters as a member of variogram function
+    for (size_t i = 0, totparams = 0; i < r; i++ ){
+        paramvec.push_back(params.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+        totparams += n_params + m_dim*(m_dim+1)/2;
+    }
     for (size_t h = 0; h < rows/m_dim ; ++h) {
         truegamma.block(h*m_dim,0,m_dim,m_dim) = sqrt(w[h])*m_crosscov(paramvec, m_mean_x->operator[](h), m_mean_y->operator[](h));
         empiricgamma.block(h*m_dim,0,m_dim,m_dim) *= sqrt(w[h]);

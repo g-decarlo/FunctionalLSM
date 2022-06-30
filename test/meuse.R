@@ -13,9 +13,9 @@ y3 <- meuse$lead/30
 # Find anchorpoints
 a <- find_anchorpoints.lsm(d,12)
 # Build the empiric variogram
-vario <- variogram.lsm(cbind(y,y2,y3,meuse$y/meuse$x*y3/y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
+vario <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 2,kernel_id = "gaussian")
 # Find the solutions
-solu <- findsolutions.lsm(vario , "exponential", c(570/2,571/2,0.1,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+solu <- findsolutions.lsm(vario , c("nugget","exponential"), c(570/2,571/2,0.1,1000,1000,1000,100,1000,1000,1000,1000,1000),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
 # Plot of the solutions
 solu$solutions
 
