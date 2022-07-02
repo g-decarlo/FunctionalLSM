@@ -50,4 +50,6 @@ cd::matrix CrossCovariance::matricize(const cd::vector& vec) const{
     return mat;
 }
 
+
+
 } // namespace LocallyStationaryModels

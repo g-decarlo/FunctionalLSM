@@ -15,22 +15,22 @@ a <- find_anchorpoints.lsm(d,12)
 # Build the empiric variogram
 vario <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 2,kernel_id = "gaussian")
 # Find the solutions
-solu <- findsolutions.lsm(vario , c("nugget","exponential"), c(570/2,571/2,0.1,1000,1000,1000,100,1000,1000,1000,1000,1000),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+solu <- findsolutions.lsm(vario ,lower.delta = 1, c("exp","nugget"), c(250,250,0.1,1000,1000,1000,1000,1000,1000,100,100,100),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
 # Plot of the solutions
 solu$solutions
 
- vario1 <- variogram.lsm(y,d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
+ vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
 
-solu <- findsolutions.lsm(vario1, "maternNuNugget_1", c(200,200,0.01,100,0.1))
+solu <- findsolutions.lsm(vario1, "exponential", c(200,200,0.01,100,0.1))
 ##
 x11()
-mypoints<-plot.lsm(model = solu, a = a, z = c(y), d = d, n_points = 15, points_arrangement = "straight", kriging = TRUE, 
-                   ellipse_scale = 2.5, arrow_scale = 1.5)
+mypoints<-plot.lsm(model = solu, a=a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
+                   ellipse_scale = 2.5 , arrow_scale = 1.5)
 
 # Kriging on the original data
 x11()
 previsions <- predict.lsm(solu, d, plot_output = T)
-max(previsions$zpredicted - y)
+max(abs(previsions$zpredicted - cbind(y,y2)))
 
 # Test the performace of our model via cross-validation
 cv.lsm(y,d,a$anchorpoints,350,8,8,"gaussian","exponential", c(200,200,0.01,100))

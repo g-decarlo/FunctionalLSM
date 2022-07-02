@@ -24,7 +24,7 @@
 #' vario <- variogram.lsm(y,d,a$anchorpoints,370,8,8,"gaussian")
 #' solu <- findsolutions.lsm(vario, "exponential", c(200,200,0.01,100))
 #' mypoints<-plot.lsm(model = solu, a = a, z = y, d = d, n_points = 3, points_arrangement = "straight", kriging = TRUE, ellipse_scale = 2, arrow_scale = 1.5)
-plot.lsm<-function(model, a, z, d, n_points = 3, seed = 68, points_arrangement = "straight", n_threads = -1, kriging = FALSE, ellipse_scale = 1, arrow_scale = 1)
+plot.lsm<-function(model, a, z = model$initial_z, d, n_points = 3, seed = 68, points_arrangement = "straight", n_threads = -1, kriging = FALSE, ellipse_scale = 1, arrow_scale = 1)
 {
   d <- model$initial_coordinates
   #z <- model$initial_z
@@ -86,7 +86,7 @@ plot.lsm<-function(model, a, z, d, n_points = 3, seed = 68, points_arrangement =
   colnames(dd) <- c("X", "Y")
   
   par(ask=TRUE)
-  if (model$dim > 1){
+  if (dim(z)[2] > 1){
   for(i in 1:dim(z)[2]){
     Z=z[,i]
     p <- ggplot2::ggplot(dd, ggplot2::aes(x=X, y=Y, size=Z)) + ggplot2::geom_point() + ggplot2::labs(x="X", y="Y")
@@ -97,7 +97,7 @@ plot.lsm<-function(model, a, z, d, n_points = 3, seed = 68, points_arrangement =
   else {
     Z=z
     p <- ggplot2::ggplot(dd, ggplot2::aes(x=X, y=Y, size=Z)) + ggplot2::geom_point() + ggplot2::labs(x="X", y="Y")
-    p <- p + ggplot2::labs(title = paste("Bubble plot of the initial data",as.character(i)), fontface = 'bold') + ggplot2::theme_light() + ggplot2::coord_fixed()
+    p <- p + ggplot2::labs(title = "Bubble plot of the initial data", fontface = 'bold') + ggplot2::theme_light() + ggplot2::coord_fixed()
     print(p)
   }
   

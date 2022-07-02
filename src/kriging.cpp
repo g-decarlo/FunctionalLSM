@@ -64,8 +64,13 @@ cd::matrix Predictor::build_etavec( cd::vector& params, vectorind& neighbourhood
 {
     size_t n = neighbourhood.size();
     matrix gamma(Eigen::MatrixXd::Zero((n+1)*m_dim, (n+1)*m_dim));
+    matrix eta((n+1)*m_dim, m_dim);
     std::vector<vector> paramvec;
-    paramvec.push_back(params);
+    for (size_t i = 0, totparams = 0; i < m_id.size(); i++ ){
+            unsigned n_params = 3;
+                paramvec.push_back(params.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+            totparams += n_params + m_dim*(m_dim+1)/2;
+            }
     // compute matrix
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < n; ++j) {
@@ -79,7 +84,7 @@ cd::matrix Predictor::build_etavec( cd::vector& params, vectorind& neighbourhood
         }
     }
     // compute eta
-    matrix eta((n+1)*m_dim, m_dim);
+    //matrix eta((n+1)*m_dim, m_dim);
     matrix zeroone(Eigen::MatrixXd::Zero((n+1)*m_dim,m_dim));
     zeroone.block(n*m_dim,0,m_dim,m_dim) = Eigen::MatrixXd::Identity(m_dim,m_dim);
     eta = gamma.fullPivHouseholderQr().solve(zeroone);
@@ -118,14 +123,22 @@ std::pair<cd::matrix, cd::matrix> Predictor::build_etakrigingvec(const cd::vecto
     matrix C0(n*m_dim, m_dim);
     matrix correlationmatrix(n*m_dim, n*m_dim);
     std::vector<vector> paramvec;
-    paramvec.push_back(params);
+    for (size_t i = 0, totparams = 0; i < m_id.size(); i++ ){
+            unsigned n_params = 3;
+                paramvec.push_back(params.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+            totparams += n_params + m_dim*(m_dim+1)/2;
+            }
     // compute the corralation matrix and C0
     for (size_t i = 0; i < n; ++i) {
         const vector& posi = m_data->row(i);
         cd::vector s0 = posi - pos;
         cd::vector paramsi = m_smt.smooth_vector(posi);
         std::vector<vector> paramveci;
-        paramveci.push_back(paramsi);
+        for (size_t i = 0, totparams = 0; i < m_id.size(); i++ ){
+            unsigned n_params = 3;
+                paramveci.push_back(paramsi.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+            totparams += n_params + m_dim*(m_dim+1)/2;
+            }
         C0.block(i*m_dim,0,m_dim,m_dim) = m_crosscov(paramveci, paramvec, s0[0], s0[1]);
     }
     // compute etakriging
@@ -135,6 +148,7 @@ std::pair<cd::matrix, cd::matrix> Predictor::build_etakrigingvec(const cd::vecto
     for (size_t i = 0; i < n; ++i) {
         krigingvariance -= etakriging.block(i*m_dim,0,m_dim,m_dim).transpose()*C0.block(i*m_dim,0,m_dim,m_dim);
     }
+
     return std::make_pair(etakriging, krigingvariance);
 }
 
@@ -216,7 +230,6 @@ std::pair<vector, matrix> Predictor::predict_z<cd::vector, std::pair<vector, mat
         Eigen::RowVectorXd row = m_z->row(i) - m_means->row(i);
         result += etakriging.block(i*m_dim, 0, m_dim, m_dim).transpose() * row.transpose();
     }
-
     // return z(pos) and the kriging variance
     return std::make_pair(result, fulletakriging.second);
 }
@@ -261,12 +274,21 @@ cd::matrix Predictor::compute_kriging_matrix_inverse_vec(){
         const vector& posi = m_data->row(i);
         cd::vector paramsi = m_smt.smooth_vector(posi);
         std::vector<vector> paramveci;
-        paramveci.push_back(paramsi);
+        for (size_t i = 0, totparams = 0; i < m_id.size(); i++ ){
+            unsigned n_params = 3;
+                paramveci.push_back(paramsi.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+            totparams += n_params + m_dim*(m_dim+1)/2;
+            }
+
         for (size_t j = i; j < n; ++j) {
             const vector& posj = m_data->row(j);
             cd::vector paramsj = m_smt.smooth_vector(posj);
             std::vector<vector> paramvecj;
-            paramvecj.push_back(paramsj);
+            for (size_t i = 0, totparams = 0; i < m_id.size(); i++ ){
+            unsigned n_params = 3;
+                paramvecj.push_back(paramsj.segment(totparams, n_params + m_dim*(m_dim+1)/2));
+            totparams += n_params + m_dim*(m_dim+1)/2;
+            }
             cd::vector s = posi - posj;
             kriging_matrix.block(i*m_dim, j*m_dim, m_dim, m_dim) = m_crosscov(paramveci, paramvecj, s[0], s[1]);
             kriging_matrix.block(j*m_dim, i*m_dim, m_dim, m_dim) = kriging_matrix.block(i*m_dim, j*m_dim, m_dim, m_dim).transpose();
@@ -285,6 +307,7 @@ Predictor::Predictor(
     , m_data(data)
     , m_dim(dim)
     , m_a(anchorpoints)
+    , m_id(id)
 {
     m_means = std::make_shared<matrix>(z->rows(),z->cols());
     cd::matrixptr anchor_means = std::make_shared<matrix>(m_a->rows(),z->cols());
