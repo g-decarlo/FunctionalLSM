@@ -87,11 +87,14 @@ double ExponentialNugget::correlation(const cd::vector& params, const double& x,
     if (std::abs(x) < Tolerances::min_norm && std::abs(y) < Tolerances::min_norm) {
         return 1;
     }
-    if(tau2 < sigma*sigma){
-        return (1 - tau2/sigma/sigma)*exp(-h);
-    }
-    return 0;
-    
+
+    return (1 - tau2/(sigma*sigma+tau2))*exp(-h);
+        
+}
+
+double ExponentialNugget::operator()(const cd::vector& params, const double& x, const double& y)
+{
+    return (params[3]*params[3]+params[4])*(1-this->correlation(params, x, y));
 }
 
 double Matern::correlation(const cd::vector& params, const double& x, const double& y)
@@ -152,12 +155,17 @@ double MaternNuNugget::correlation(const cd::vector& params, const double& x, co
     }
 
     double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-    if(tau2 < sigma*sigma){
-    return
-             (1-tau2/(sigma*sigma))*std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
-                / (std::tgamma(nu) * std::pow(2, nu - 1));}
     
-    return 0;
+    return
+             (1-tau2/(sigma*sigma+tau2))*std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
+                / (std::tgamma(nu) * std::pow(2, nu - 1));
+    
+
+}
+
+double MaternNuNugget::operator()(const cd::vector& params, const double& x, const double& y)
+{
+    return (params[3]*params[3]+params[4])*(1-this->correlation(params, x, y));
 }
 
 double Gaussian::correlation(const cd::vector& params, const double& x, const double& y)

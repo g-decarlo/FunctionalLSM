@@ -3,6 +3,21 @@ rm(list = ls())
 
 # Load the libraries
 library(LocallyStationaryModels)
+
+
+d <- cbind(simulated_process[,1],simulated_process[,2])
+a <- find_anchorpoints.lsm(d,n = 6)
+z <- as.matrix(simulated_process[,3])
+
+vario <- variogram.lsm(z = z,d = d,a = a$anchorpoints,epsilon=0.2,n_angles=6,n_intervals=12,dim=1,kernel_id="gaussian")
+plotvario(variogram = vario, 6)
+solu <- findsolutions.lsm(vario ,lower.delta = 2, "exponentialnugget", c(0.2,0.2,0.1,0.3,0.03), upper.bound = c(0.4,0.4,pi/2,10,1))
+solu$solutions
+mypoints<-plot.lsm(model = solu, a=a, n_points = 5, points_arrangement = "straight", kriging = FALSE, 
+                   ellipse_scale = 2.5 , arrow_scale = 1.5)
+
+
+
 # Load the data
 data(meuse)
 d <- cbind(meuse$x, meuse$y)
@@ -21,8 +36,9 @@ solu$solutions
 
  vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
 
-solu <- findsolutions.lsm(vario1, "exponentialnugget", c(200,200,0.01,100,4))
+solu <- findsolutions.lsm(vario1, "exponentialnugget", c(200,300,0.01,100,0.1))
 solu$solutions
+plotvario(vario1,61)
 ##
 x11()
 mypoints<-plot.lsm(model = solu, a=a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
@@ -33,17 +49,5 @@ x11()
 previsions <- predict.lsm(solu, d, plot_output = T)
 max(abs(previsions$zpredicted - cbind(y,y2)))
 
-# Test the performace of our model via cross-validation
-cv.lsm(y,d,a$anchorpoints,350,8,8,"gaussian","exponential", c(200,200,0.01,100))
 
-library(LocallyStationaryModels)
-d <- cbind(simulated_process[,1],simulated_process[,2])
-a <- find_anchorpoints.lsm(d,n = 6)
-z <- as.matrix(simulated_process[,3])
 
-vario <- variogram.lsm(z = z,d = d,a = a$anchorpoints,epsilon=0.02,n_angles=8,n_intervals=16,dim=1,kernel_id="gaussian")
-plotvario(variogram = vario, 6)
-solu <- findsolutions.lsm(vario ,lower.delta = 1, "exponentialnugget", c(0.02,0.05,0.5,0.5,0.03), upper.bound = c(0.4,0.4,pi/2,10,10))
-solu$solutions
-mypoints<-plot.lsm(model = solu, a=a, n_points = 10, points_arrangement = "straight", kriging = FALSE, 
-                   ellipse_scale = 2.5 , arrow_scale = 1.5)

@@ -57,6 +57,7 @@ public:
      * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
      */
     double correlation(const cd::vector& params, const double& x, const double& y) override;
+    double operator()(const cd::vector& params, const double& x, const double& y) override;
 }; // class Exponential
 
 class Matern : public VariogramFunction {
@@ -117,6 +118,7 @@ public:
      * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
      */
     double correlation(const cd::vector& params, const double& x, const double& y) override;
+    double operator()(const cd::vector& params, const double& x, const double& y) override;
 }; // class MaternNuFixed
 
 /**
