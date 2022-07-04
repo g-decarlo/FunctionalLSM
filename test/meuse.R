@@ -15,13 +15,14 @@ a <- find_anchorpoints.lsm(d,12)
 # Build the empiric variogram
 vario <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 2,kernel_id = "gaussian")
 # Find the solutions
-solu <- findsolutions.lsm(vario ,lower.delta = 1, c("exp","nugget"), c(250,250,0.1,1000,1000,1000,1000,1000,1000,100,100,100),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+solu <- findsolutions.lsm(vario ,lower.delta = 1, c("nugget","exp"), c(250,250,0.1,1000,1000,1000,250,250,0.1,100,100,100),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,1e-8,1e-8,1e-8,-Inf,-Inf,-Inf))
 # Plot of the solutions
 solu$solutions
 
  vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
 
-solu <- findsolutions.lsm(vario1, "exponential", c(200,200,0.01,100,0.1))
+solu <- findsolutions.lsm(vario1, "exponentialnugget", c(200,200,0.01,100,4))
+solu$solutions
 ##
 x11()
 mypoints<-plot.lsm(model = solu, a=a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
@@ -34,3 +35,15 @@ max(abs(previsions$zpredicted - cbind(y,y2)))
 
 # Test the performace of our model via cross-validation
 cv.lsm(y,d,a$anchorpoints,350,8,8,"gaussian","exponential", c(200,200,0.01,100))
+
+library(LocallyStationaryModels)
+d <- cbind(simulated_process[,1],simulated_process[,2])
+a <- find_anchorpoints.lsm(d,n = 6)
+z <- as.matrix(simulated_process[,3])
+
+vario <- variogram.lsm(z = z,d = d,a = a$anchorpoints,epsilon=0.02,n_angles=8,n_intervals=16,dim=1,kernel_id="gaussian")
+plotvario(variogram = vario, 6)
+solu <- findsolutions.lsm(vario ,lower.delta = 1, "exponentialnugget", c(0.02,0.05,0.5,0.5,0.03), upper.bound = c(0.4,0.4,pi/2,10,10))
+solu$solutions
+mypoints<-plot.lsm(model = solu, a=a, n_points = 10, points_arrangement = "straight", kriging = FALSE, 
+                   ellipse_scale = 2.5 , arrow_scale = 1.5)

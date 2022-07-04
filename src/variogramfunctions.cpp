@@ -76,6 +76,24 @@ double Exponential::correlation(const cd::vector& params, const double& x, const
     return exp(-h);
 }
 
+double ExponentialNugget::correlation(const cd::vector& params, const double& x, const double& y)
+{   
+    double lambda1 = params[0];
+    double lambda2 = params[1];
+    double phi = params[2];
+    double sigma = params[3];
+    double tau2 = params[4];
+    double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
+    if (std::abs(x) < Tolerances::min_norm && std::abs(y) < Tolerances::min_norm) {
+        return 1;
+    }
+    if(tau2 < sigma*sigma){
+        return (1 - tau2/sigma/sigma)*exp(-h);
+    }
+    return 0;
+    
+}
+
 double Matern::correlation(const cd::vector& params, const double& x, const double& y)
 {
     double lambda1 = params[0];
@@ -134,9 +152,12 @@ double MaternNuNugget::correlation(const cd::vector& params, const double& x, co
     }
 
     double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
+    if(tau2 < sigma*sigma){
     return
-             (1-tau2)*std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
-                / (std::tgamma(nu) * std::pow(2, nu - 1));
+             (1-tau2/(sigma*sigma))*std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
+                / (std::tgamma(nu) * std::pow(2, nu - 1));}
+    
+    return 0;
 }
 
 double Gaussian::correlation(const cd::vector& params, const double& x, const double& y)
@@ -163,6 +184,9 @@ std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id)
     }
     if (id == "nugget" || id == "Nugget") {
         return std::make_shared<Nugget>();
+    }
+    if (id == "exponentialnugget" || id == "ExponentialNugget") {
+        return std::make_shared<ExponentialNugget>();
     }
     // using the following method we can set directly from R passing a string a constant value for nu
     if (id.substr(0, 13) == "maternNuFixed") {
