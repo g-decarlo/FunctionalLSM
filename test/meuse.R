@@ -36,12 +36,12 @@ solu$solutions
 
  vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
 
-solu <- findsolutions.lsm(vario1, "exponentialnugget", c(200,300,0.01,100,0.1))
+solu <- findsolutions.lsm(vario1, "exponential", c(200,300,0.01,100), remove_not_convergent = T)
 solu$solutions
 plotvario(vario1,61)
 ##
 x11()
-mypoints<-plot.lsm(model = solu, a=a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
+mypoints<-plot.lsm(model = solu, a = a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
                    ellipse_scale = 2.5 , arrow_scale = 1.5)
 
 # Kriging on the original data

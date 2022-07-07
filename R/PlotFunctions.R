@@ -24,7 +24,7 @@
 #' vario <- variogram.lsm(y,d,a$anchorpoints,370,8,8,"gaussian")
 #' solu <- findsolutions.lsm(vario, "exponential", c(200,200,0.01,100))
 #' mypoints<-plot.lsm(model = solu, a = a, z = y, d = d, n_points = 3, points_arrangement = "straight", kriging = TRUE, ellipse_scale = 2, arrow_scale = 1.5)
-plot.lsm<-function(model, a, z = model$initial_z, d, n_points = 3, seed = 68, points_arrangement = "straight", n_threads = -1, kriging = FALSE, ellipse_scale = 1, arrow_scale = 1)
+plot.lsm<-function(model, a , z = model$initial_z, d, n_points = 3, seed = 68, points_arrangement = "straight", n_threads = -1, kriging = FALSE, ellipse_scale = 1, arrow_scale = 1)
 {
   d <- model$initial_coordinates
   #z <- model$initial_z
@@ -34,7 +34,8 @@ plot.lsm<-function(model, a, z = model$initial_z, d, n_points = 3, seed = 68, po
     set.seed(seed = seed)
   }
   # associate each anchorpoints with the value of the parameters lambda1, lambda2, phi and sigma in its position
-  aa <- as.data.frame(a$anchorpoints)
+  aa <- as.data.frame(model$anchorpoints)
+  
   colnames(aa) <- c("X","Y")
   s <- model$solutions
   s <- as.data.frame(s)

@@ -44,17 +44,19 @@ findsolutions.lsm<-function(vario, id, initial.position, lower.bound = rep(1e-8,
   #if(vario$dim == 1 &( length(initial.position) != variogramfunctions$n_parameters[which(variogramfunctions$name == id_check)] || length(lower.bound) != variogramfunctions$n_parameters[which(variogramfunctions$name == id_check)] || length(upper.bound) != variogramfunctions$n_parameters[which(variogramfunctions$name == id_check)]))
   #{
    # stop("wrong number of initial parameters")#change to stop
-  #}
+  #}TODO fix
   result <- findsolutionslsm(vario$anchorpoints, vario$empiricvariogram, vario$squaredweigths, vario$dim, vario$mean.x, vario$mean.y, id, vario$kernel_id, initial.position, lower.bound, upper.bound, vario$epsilon, lower.delta, upper.delta, print_output, n_threads)
   if (remove_not_convergent)
-  {
-    for (i in 1:dim(result$solutions)[1])
+  { i=1
+    while (i < dim(result$solutions)[1])
     {
       if (norm((result$solutions[i, ]-initial.position), type="2") < 1e-12)
       {
         result$solutions <- result$solutions[-i,]
         result$anchorpoints <- result$anchorpoints[-i, ]
+        i = i-1
       }
+      i=i+1
     }
   }
   result$id <- id
