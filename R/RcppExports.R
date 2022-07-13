@@ -13,11 +13,15 @@ findsolutionslsm <- function(anchorpoints, empiricvariogram, squaredweights, dim
     .Call('_LocallyStationaryModels_findsolutionslsm', PACKAGE = 'LocallyStationaryModels', anchorpoints, empiricvariogram, squaredweights, dim, mean_x, mean_y, variogram_id, kernel_id, parameters, lowerbound, upperbound, epsilon, lowerdelta, upperdelta, print, n_threads)
 }
 
-predikt <- function(z, data, anchorpoints, epsilon, delta, dim, solutions, positions, variogram_id, kernel_id, print, n_threads) {
-    .Call('_LocallyStationaryModels_predikt', PACKAGE = 'LocallyStationaryModels', z, data, anchorpoints, epsilon, delta, dim, solutions, positions, variogram_id, kernel_id, print, n_threads)
+predikt <- function(z, data, anchorpoints, epsilon, delta, dim, solutions, positions, variogram_id, kernel_id, print, n_threads, predict_y) {
+    .Call('_LocallyStationaryModels_predikt', PACKAGE = 'LocallyStationaryModels', z, data, anchorpoints, epsilon, delta, dim, solutions, positions, variogram_id, kernel_id, print, n_threads, predict_y)
 }
 
 smoothing <- function(solutions, anchorpoints, delta, positions, kernel_id, n_threads) {
     .Call('_LocallyStationaryModels_smoothing', PACKAGE = 'LocallyStationaryModels', solutions, anchorpoints, delta, positions, kernel_id, n_threads)
+}
+
+samplelsm <- function(d, variogram_id, parameters, dim, n_samples) {
+    .Call('_LocallyStationaryModels_samplelsm', PACKAGE = 'LocallyStationaryModels', d, variogram_id, parameters, dim, n_samples)
 }
 

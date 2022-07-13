@@ -36,9 +36,9 @@ solu$solutions
 
  vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
 
-solu <- findsolutions.lsm(vario1, "exponential", c(200,300,0.01,100), remove_not_convergent = T)
+solu <- findsolutions.lsm(vario1, "exponential", c(300,200,0.01,100,10), remove_not_convergent = T)
 solu$solutions
-plotvario(vario1,61)
+plotvario(vario1,6)
 ##
 x11()
 mypoints<-plot.lsm(model = solu, a = a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
@@ -46,7 +46,7 @@ mypoints<-plot.lsm(model = solu, a = a, n_points = 10, points_arrangement = "str
 
 # Kriging on the original data
 x11()
-previsions <- predict.lsm(solu, d, plot_output = T)
+previsions <- predict.lsm(solu, a$anchorpoints, plot_output = F, predict_y = F)
 max(abs(previsions$zpredicted - cbind(y,y2)))
 
 

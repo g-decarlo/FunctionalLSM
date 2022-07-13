@@ -25,6 +25,7 @@ private:
     std::vector<std::string> m_id; ///< names of the chosen variograms
     CrossCovariance m_crosscov;///< cross covariance operator
     cd::matrixptr m_a;
+    cd::matrixptr m_anchor_means;
 
     /**
      * \brief build a vector with the index of the points in the neighbourhood of radius b of the point in position pos
@@ -62,7 +63,7 @@ public:
      * \param data a shared pointer to the matrix with the coordinates of the original dataset
      */
     Predictor(
-        const std::vector<std::string>& id, const cd::matrixptr& z, const size_t& dim, const Smt& mysmt, const double& b, const cd::matrixptr& data, const cd::matrixptr& anchorpoints);
+        const std::vector<std::string>& id, const cd::matrixptr& z, const size_t& dim, const Smt& mysmt, const double& b, const cd::matrixptr& data, const cd::matrixptr& anchorpoints, const bool& predict_y);
     /**
      * \brief gammaiso set by default to exponential
      */
@@ -77,6 +78,8 @@ public:
      * \brief predict Z
      */
     template <typename Input, typename Output> Output predict_z(const Input& pos) const;
+    
+    cd::matrixptr get_anchormeans() {return m_anchor_means;};
 }; // class Predictor
 } // namespace LocallyStationaryModels
 

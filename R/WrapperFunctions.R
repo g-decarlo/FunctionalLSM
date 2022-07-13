@@ -88,11 +88,11 @@ findsolutions.lsm<-function(vario, id, initial.position, lower.bound = rep(1e-8,
 #' vario <- variogram.lsm(y,d,a$anchorpoints,370,8,8,"gaussian")
 #' solu <- findsolutions.lsm(vario, "exponential", c(200,200,0.01,100))
 #' previsions <- predict.lsm(solu, d)
-predict.lsm<-function(sol, newpos, plot_output = TRUE, print_output = TRUE, n_threads = -1)
+predict.lsm<-function(sol, newpos, plot_output = TRUE, print_output = TRUE, n_threads = -1, predict_y=T)
 {
   d <- sol$initial_coordinates
   z <- sol$initial_z
-  predictedvalues <- predikt(as.matrix(z),d,sol$anchorpoints,sol$epsilon,sol$delta,sol$dim,sol$solutions,newpos,sol$id,sol$kernel_id,print_output,n_threads)
+  predictedvalues <- predikt(as.matrix(z),d,sol$anchorpoints,sol$epsilon,sol$delta,sol$dim,sol$solutions,newpos,sol$id,sol$kernel_id,print_output, n_threads, predict_y)
   if (plot_output)
   {
     par(ask=TRUE)
@@ -221,5 +221,10 @@ variogram.lsm <- function(z, d, anchorpoints, epsilon, n_angles, n_intervals, di
 smooth.lsm <- function(model, newpoints, n_threads = -1)
 {
   result <- smoothing(model$solutions,model$anchorpoints,model$delta,newpoints,model$kernel_id,n_threads)
+  return(result)
+}
+
+sample.lsm <- function(d, variogram_id, parameters, dim = 1, n_samples = 1) {
+  result <- samplelsm(d, variogram_id, parameters, dim, n_samples)
   return(result)
 }

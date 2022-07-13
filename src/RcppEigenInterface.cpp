@@ -11,6 +11,8 @@
 #include "samplevar.hpp"
 #include "smooth.hpp"
 #include "variogramfit.hpp"
+#include "coregionalization.hpp"
+#include <random>
 
 using namespace LocallyStationaryModels;
 using namespace LocallyStationaryModels::cd;
@@ -175,7 +177,7 @@ Rcpp::List findsolutionslsm(const Eigen::MatrixXd& anchorpoints, const Eigen::Ma
 // [[Rcpp::export]]
 Rcpp::List predikt(const Eigen::MatrixXd& z, const Eigen::MatrixXd& data, const Eigen::MatrixXd& anchorpoints,
     const double& epsilon, const double& delta, const size_t& dim, const Eigen::MatrixXd& solutions, const Eigen::MatrixXd& positions,
-    const std::vector<std::string>& variogram_id, const std::string& kernel_id, const bool print, const int& n_threads)
+    const std::vector<std::string>& variogram_id, const std::string& kernel_id, const bool print, const int& n_threads, const bool& predict_y)
 {
     // start the clock
     auto start = high_resolution_clock::now();
@@ -197,19 +199,24 @@ Rcpp::List predikt(const Eigen::MatrixXd& z, const Eigen::MatrixXd& data, const 
     matrixptr anchorpointsptr = std::make_shared<matrix>(anchorpoints);
 
     Smt smt_(solutionsptr, anchorpointsptr, delta, kernel_id);
-    Predictor predictor_(variogram_id, zz, dim, smt_, epsilon, dd, anchorpointsptr);
+    Predictor predictor_(variogram_id, zz, dim, smt_, epsilon, dd, anchorpointsptr, predict_y);
     // predict the mean, the variance and the pointwise prediction of z in positions
-    matrix predicted_ys(predictor_.predict_z<cd::matrix, cd::matrix>(positions));
     matrix predicted_means(predictor_.predict_mean<cd::matrix, cd::matrix>(positions));
     // stop the clock and calculate the processing time
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
     if (print)
-        Rcpp::Rcout << predicted_ys.rows() << " pairs of values predicted in " << duration.count() << "ms" << std::endl;
+        Rcpp::Rcout << predicted_means.rows() << " pairs of values predicted in " << duration.count() << "ms" << std::endl;
 
-    return Rcpp::List::create(Rcpp::Named("zpredicted") = predicted_ys.leftCols(z.cols()),
-        Rcpp::Named("predictedmean") = predicted_means, Rcpp::Named("krigingvariance") = predicted_ys.rightCols(1));
+    if(predict_y){
+    matrix predicted_ys(predictor_.predict_z<cd::matrix, cd::matrix>(positions));
+        return Rcpp::List::create(Rcpp::Named("zpredicted") = predicted_ys.leftCols(z.cols()),
+            Rcpp::Named("smoothed_means") = predicted_means,  Rcpp::Named("anchor_means") = *(predictor_.get_anchormeans()),
+             Rcpp::Named("krigingvariance") = predicted_ys.rightCols(1));
+    }       
+
+    return Rcpp::List::create(Rcpp::Named("smoothed_means") = predicted_means, Rcpp::Named("anchor_means") = *(predictor_.get_anchormeans()));
 }
 
 /**
@@ -250,4 +257,94 @@ Rcpp::List smoothing(const Eigen::MatrixXd solutions, const Eigen::MatrixXd& anc
     }
 
     return Rcpp::List::create(Rcpp::Named("parameters") = result);
+}
+
+//[[Rcpp::export]]
+Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& variogram_id, const::Eigen::MatrixXd& parameters, const unsigned& dim, const unsigned& n_samples){
+
+    if (dim == 1){
+    VariogramFunction& cov = *(make_variogramiso(variogram_id[0]));
+    size_t n = d.rows();
+    matrix cov_matrix(n,n);
+    for (size_t i = 0; i < n; ++i) {
+        const vector& posi = d.row(i);
+        const vector& paramsi = parameters.row(i);
+        for (size_t j = i; j < n; ++j) {
+            const vector& posj = d.row(j);
+            const vector& paramsj = parameters.row(j);
+            cd::vector s = posi - posj;
+            cov_matrix(i, j) = cov(paramsi, paramsj, s[0], s[1]);
+            cov_matrix(j, i) = cov(paramsi, paramsj, s[0], s[1]);
+        }
+    }
+
+    Eigen::MatrixXd rand_normal(Eigen::MatrixXd::Zero(n,n_samples));
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0.,1.0);
+    for(size_t i = 0; i < n; i++){
+        for(size_t j = 0; j < n_samples; j++){
+            rand_normal(i,j) = distribution(generator);
+        }  
+    }
+
+    Eigen::MatrixXd L(cov_matrix.llt().matrixL());
+    Eigen::MatrixXd simulated_processes(L*rand_normal);
+    return Rcpp::List::create(Rcpp::Named("dim") = dim,
+        Rcpp::Named("paramters") = parameters,
+        Rcpp::Named("covariance_functions") = variogram_id,
+        Rcpp::Named("simulated_processes") = simulated_processes,
+        Rcpp::Named("cov_matrix") = cov_matrix);
+    }
+
+    CrossCovariance cov(variogram_id, dim, variogram_id.size());
+    size_t n = d.rows();
+    matrix cov_matrix(n*dim,n*dim);
+    for (size_t i = 0; i < n; ++i) {
+        const vector& posi = d.row(i);
+        cd::vector paramsi = parameters.row(i);
+        std::vector<vector> paramveci;
+        for (size_t i = 0, totparams = 0; i < variogram_id.size(); i++ ){
+            unsigned n_params = 3;
+            paramveci.push_back(paramsi.segment(totparams, n_params + dim*(dim+1)/2));
+            totparams += n_params + dim*(dim+1)/2;
+            }
+
+        for (size_t j = i; j < n; ++j) {
+            const vector& posj = d.row(j);
+            cd::vector paramsj = parameters.row(j);
+            std::vector<vector> paramvecj;
+            for (size_t i = 0, totparams = 0; i < variogram_id.size(); i++ ){
+            unsigned n_params = 3;
+            paramvecj.push_back(paramsj.segment(totparams, n_params + dim*(dim+1)/2));
+            totparams += n_params + dim*(dim+1)/2;
+            }
+            cd::vector s = posi - posj;
+            cov_matrix.block(i*dim, j*dim, dim, dim) = cov(paramveci, paramvecj, s[0], s[1]);
+            cov_matrix.block(j*dim, i*dim, dim, dim) = cov_matrix.block(i*dim, j*dim, dim, dim).transpose();
+        }
+    }
+
+    Eigen::MatrixXd rand_normal(Eigen::MatrixXd::Zero(n*dim,n_samples));
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0.,1.0);
+    for(size_t i = 0; i < n*dim; i++){
+        for(size_t j = 0; j < n_samples; j++){
+            rand_normal(i,j) = distribution(generator);
+        }  
+    }
+
+    Eigen::MatrixXd L(cov_matrix.llt().matrixL());
+    Eigen::MatrixXd sim_proc(L*rand_normal);
+    Eigen::MatrixXd simulated_processes(Eigen::MatrixXd::Zero(n,n_samples*dim));
+    
+    for(size_t i = 0; i < n_samples; i++){
+        for(size_t j = 0; j < n; j++){
+            simulated_processes.block(j,i*dim,1,dim) = sim_proc.block(j*dim,i,dim,1).transpose(); 
+        }
+    }
+    return Rcpp::List::create(Rcpp::Named("dim") = dim,
+        Rcpp::Named("paramters") = parameters,
+        Rcpp::Named("covariance_functions") = variogram_id,
+        Rcpp::Named("simulated_processes") = simulated_processes,
+        Rcpp::Named("cov_matrix") = cov_matrix);
 }

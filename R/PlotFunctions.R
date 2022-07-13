@@ -144,16 +144,16 @@ plot.lsm<-function(model, a , z = model$initial_z, d, n_points = 3, seed = 68, p
   if(kriging)
   { 
     # predict and plot the mean and punctual value of z for each newpoint
-    predictedvalues<-predikt(as.matrix(z),d,model$anchorpoints,model$epsilon,model$delta,model$dim,model$solutions,as.matrix(allpoints)[,1:2],model$id,model$kernel_id,FALSE,n_threads)
+    predictedvalues<-predikt(as.matrix(z),d,model$anchorpoints,model$epsilon,model$delta,model$dim,model$solutions,as.matrix(allpoints)[,1:2],model$id,model$kernel_id,FALSE,n_threads,TRUE)
     for(i in 1:dim(predictedvalues$zpredicted)[2]){
     if (points_arrangement == "random")
     {
-      means <- ggplot2::ggplot(allpoints, ggplot2::aes(x=X, y=Y, color=predictedvalues$predictedmean[,i])) + ggplot2::geom_point() + ggplot2::scale_color_gradientn(colours = rainbow(5)) + ggplot2::coord_fixed()
+      means <- ggplot2::ggplot(allpoints, ggplot2::aes(x=X, y=Y, color=predictedvalues$smoothed_means[,i])) + ggplot2::geom_point() + ggplot2::scale_color_gradientn(colours = rainbow(5)) + ggplot2::coord_fixed()
       ys <- ggplot2::ggplot(allpoints, ggplot2::aes(x=X, y=Y, color=predictedvalues$zpredicted[,i])) + ggplot2::geom_point() + ggplot2::scale_color_gradientn(colours = rainbow(5)) + ggplot2::coord_fixed()
     }
     else
     {
-      means <- ggplot2::ggplot(allpoints, ggplot2::aes(x=X, y=Y, fill=predictedvalues$predictedmean[,i])) + ggplot2::geom_tile() + ggplot2::scale_fill_gradientn(colours = rainbow(5)) + ggplot2::coord_fixed()
+      means <- ggplot2::ggplot(allpoints, ggplot2::aes(x=X, y=Y, fill=predictedvalues$smoothed_means[,i])) + ggplot2::geom_tile() + ggplot2::scale_fill_gradientn(colours = rainbow(5)) + ggplot2::coord_fixed()
       ys <- ggplot2::ggplot(allpoints, ggplot2::aes(x=X, y=Y, fill=predictedvalues$zpredicted[,i])) + ggplot2::geom_tile() + ggplot2::scale_fill_gradientn(colours = rainbow(5)) + ggplot2::coord_fixed()
     }
     means<-means+ggplot2::labs(fill="mean") + ggplot2::theme_light()
@@ -162,10 +162,10 @@ plot.lsm<-function(model, a , z = model$initial_z, d, n_points = 3, seed = 68, p
     p <- cowplot::plot_grid(means, ys)
     print(cowplot::plot_grid(title, p, ncol=1, rel_heights=c(0.1, 1)))
     }
-    allpoints <- cbind(allpoints, predictedvalues$predictedmean)
+    allpoints <- cbind(allpoints, predictedvalues$smoothed_means)
     allpoints <- cbind(allpoints, predictedvalues$zpredicted)
     allpoints <- cbind(allpoints, predictedvalues$krigingvariance)
-    colnames(allpoints)[7:9] <- c("predictedmean", "zpredicted", "krigingvariance")
+    colnames(allpoints)[7:9] <- c("smoothed_means", "zpredicted", "krigingvariance")
   }
   par(ask=FALSE)
   

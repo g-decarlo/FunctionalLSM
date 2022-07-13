@@ -15,7 +15,7 @@ double VariogramFunction::compute_anisotropic_h(
 
     return sqrt((lambda2 * lambda2 * xx * cos(phi) * cos(phi) + lambda1 * lambda1 * yy * cos(phi) * cos(phi)
                     + lambda1 * lambda1 * xx * sin(phi) * sin(phi) + lambda2 * lambda2 * yy * sin(phi) * sin(phi)
-                    + lambda1 * lambda1 * xy * sin(2 * phi) - lambda2 * lambda2 * xy * sin(2 * phi))
+                    - lambda1 * lambda1 * xy * sin(2 * phi) + lambda2 * lambda2 * xy * sin(2 * phi))
         / (lambda1 * lambda1 * lambda2 * lambda2));
 }
 
@@ -33,8 +33,8 @@ double VariogramFunction::correlation(
 
     cd::matrix rot1(2,2), rot2(2,2), eig1(2,2), eig2(2,2);
 
-    rot1 << cos(phi_1), sin(phi_1)  , -sin(phi_1), cos(phi_1);
-    rot2 << cos(phi_2), +sin(phi_2)  , -sin(phi_2), cos(phi_2);
+    rot1 << cos(phi_1), -sin(phi_1)  , +sin(phi_1), cos(phi_1);
+    rot2 << cos(phi_2), -sin(phi_2)  , +sin(phi_2), cos(phi_2);
     eig1 << lambda1_1, 0, 0, lambda2_1;
     eig2 << lambda1_2, 0, 0, lambda2_2;
 

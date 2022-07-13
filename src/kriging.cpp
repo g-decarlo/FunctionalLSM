@@ -298,7 +298,7 @@ cd::matrix Predictor::compute_kriging_matrix_inverse_vec(){
 }
 
 Predictor::Predictor(
-    const std::vector<std::string>& id, const cd::matrixptr& z, const size_t& dim,const Smt& mysmt, const double& b, const cd::matrixptr& data, const cd::matrixptr& anchorpoints)
+    const std::vector<std::string>& id, const cd::matrixptr& z, const size_t& dim,const Smt& mysmt, const double& b, const cd::matrixptr& data, const cd::matrixptr& anchorpoints, const bool& predict_y)
     : m_gammaisoptr(make_variogramiso(id[0]))
     , m_crosscov(id, dim, id.size())
     , m_z(z)
@@ -310,21 +310,24 @@ Predictor::Predictor(
     , m_id(id)
 {
     m_means = std::make_shared<matrix>(z->rows(),z->cols());
-    cd::matrixptr anchor_means = std::make_shared<matrix>(m_a->rows(),z->cols());
+    m_anchor_means = std::make_shared<matrix>(m_a->rows(),z->cols());
     // build a vector with the prediction of the mean of z in every anchorpoint to speed up the next computations
     
     #pragma omp parallel for
     for (size_t i = 0; i < m_a->rows(); ++i) {
         Eigen::VectorXd row(predict_mean<size_t, vector>(i));
-        anchor_means->row(i) = row;
+        m_anchor_means->row(i) = row;
     }
-    m_smt.add_mean(anchor_means);
+    m_smt.add_mean(m_anchor_means);
     
     *m_means = predict_mean<cd::matrix, cd::matrix>(*m_data);
-    if(m_dim == 1)
-    m_kriging_matrix_inverse = std::make_shared<matrix>(compute_kriging_matrix_inverse());
-    else
-    m_kriging_matrix_inverse = std::make_shared<matrix>(compute_kriging_matrix_inverse_vec());
+
+    if(predict_y){
+        if(m_dim == 1)
+            m_kriging_matrix_inverse = std::make_shared<matrix>(compute_kriging_matrix_inverse());
+        else
+            m_kriging_matrix_inverse = std::make_shared<matrix>(compute_kriging_matrix_inverse_vec());
+    }
 
 };
 
