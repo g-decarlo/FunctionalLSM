@@ -16,9 +16,9 @@ struct Tolerances {
     /// minimum threshold below which the determinant of a matrix is considered to be 0
     static constexpr double min_determinant = 1e-12;
     /// optimization termination condition parameter epsilon
-    static constexpr double param_epsilon = 1e-6;
+    static constexpr double param_epsilon = 1e-5;
     /// optimization termination condition parameter max_iterations
-    static constexpr double param_max_iterations = 1000000;
+    static constexpr double param_max_iterations = 10000000;
     /// minimun threshold below which the norm of a vector is considered to be 0
     static constexpr double min_norm = 1e-12;
     /// huge value to be considered as infinite when returning inf would cause troubles

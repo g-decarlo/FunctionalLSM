@@ -20,15 +20,15 @@ mypoints<-plot.lsm(model = solu, a=a, n_points = 5, points_arrangement = "straig
 
 # Load the data
 data(meuse)
-d <- cbind(meuse$x, meuse$y)
+ds <- cbind(meuse$x, meuse$y)
 y <- 5*meuse$elev*meuse$x/max(meuse$x)
 y2 <- meuse$cadmium*meuse$y/meuse$x
 y3 <- meuse$lead/30
 
 # Find anchorpoints
-a <- find_anchorpoints.lsm(d,12)
+a <- find_anchorpoints.lsm(ds,12)
 # Build the empiric variogram
-vario <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 2,kernel_id = "gaussian")
+vario <- variogram.lsm(cbind(y,y2),ds,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
 # Find the solutions
 solu <- findsolutions.lsm(vario ,lower.delta = 1, c("nugget","exp"), c(250,250,0.1,1000,1000,1000,250,250,0.1,100,100,100),lower.bound = c(1e-8,1e-8,1e-8,-Inf,-Inf,-Inf,1e-8,1e-8,1e-8,-Inf,-Inf,-Inf))
 # Plot of the solutions
@@ -38,15 +38,18 @@ solu$solutions
 
 solu <- findsolutions.lsm(vario1, "exponential", c(300,200,0.01,100,10), remove_not_convergent = T)
 solu$solutions
+
+cv <- cv.lsm(z = cbind(y,y2), d = ds,anchorpoints = a,epsilons = 400+20*(1:10),
+              n_angles = 4,n_intervals = 15,kernel_id = "gaussian",id = "exponential",initial.position = c(300,200,0.01,100),dim = 1)
 plotvario(vario1,6)
 ##
 x11()
-mypoints<-plot.lsm(model = solu, a = a, n_points = 10, points_arrangement = "straight", kriging = TRUE, 
+mypoints<-plot.lsm(model = solu, a = a, n_points = 5, points_arrangement = "straight", kriging = TRUE, 
                    ellipse_scale = 2.5 , arrow_scale = 1.5)
 
 # Kriging on the original data
 x11()
-previsions <- predict.lsm(solu, a$anchorpoints, plot_output = F, predict_y = F)
+previsions <- predict.lsm(solu, a$anchorpoints, plot_output = F, predict_y = T)
 max(abs(previsions$zpredicted - cbind(y,y2)))
 
 

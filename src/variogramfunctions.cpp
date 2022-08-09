@@ -43,13 +43,15 @@ double VariogramFunction::correlation(
     Eigen::Matrix<double, 2, 2> anistot(anis1/2+anis2/2);
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 2,2> > eigen(anistot);
     Eigen::RowVectorXd paramaniso(4);
-    double phi = abs(atan(((eigen.eigenvectors()(1,0)))/((eigen.eigenvectors()(0,0)))));
+    double phi = acos(abs(eigen.eigenvectors()(1,0)));
     double lambda1 = sqrt(eigen.eigenvalues()(0));
     double lambda2 = sqrt(eigen.eigenvalues()(1));
-    
-    paramaniso << lambda1, lambda2, phi ,sqrt(sigma_1*sigma_2);
 
-    return 2*(sqrt(lambda1_1*lambda1_2*lambda2_1*lambda2_2/((2*anistot).determinant())))*(this->correlation(paramaniso,x,y));
+    paramaniso << lambda1, lambda2, phi , sqrt(sigma_1*sigma_2);
+    cd::vector s(2);
+    s << x, y;
+    return 2*(sqrt(lambda1_1*lambda1_2*lambda2_1*lambda2_2/((2*anistot).determinant())))*(exp(-sqrt(s.dot(anistot.inverse()*s))));
+    //return 2*(sqrt(lambda1_1*lambda1_2*lambda2_1*lambda2_2/((2*anistot).determinant())))*(this->correlation(paramaniso,x,y)); TODO Temporary fix
 }
 
 double VariogramFunction::operator()(
