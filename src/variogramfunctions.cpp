@@ -1,6 +1,6 @@
 // Copyright (C) Luca Crippa <luca7.crippa@mail.polimi.it>
 // Copyright (C) Giacomo De Carlo <giacomo.decarlo@mail.polimi.it>
-
+#include <Rmath.h>
 #include "variogramfunctions.hpp"
 
 namespace LocallyStationaryModels {
@@ -113,7 +113,7 @@ double Matern::correlation(const cd::vector& params, const double& x, const doub
 
     double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
     return 
-            - std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
+            - std::pow(std::sqrt(2 * nu) * h, nu) * bessel_k(std::sqrt(2 * nu) * h, nu, 1.0)
                 / (std::tgamma(nu) * std::pow(2, nu - 1));
 }
 
@@ -139,7 +139,7 @@ double MaternNuFixed::correlation(const cd::vector& params, const double& x, con
 
     double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
     return
-             std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
+             std::pow(std::sqrt(2 * nu) * h, nu) * bessel_k(std::sqrt(2 * nu) * h, nu, 1.0)
                 / (std::tgamma(nu) * std::pow(2, nu - 1));
 }
 
@@ -159,7 +159,7 @@ double MaternNuNugget::correlation(const cd::vector& params, const double& x, co
     double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
     
     return
-             (1-tau2/(sigma*sigma+tau2))*std::pow(std::sqrt(2 * nu) * h, nu) * std::cyl_bessel_k(nu, std::sqrt(2 * nu) * h)
+             (1-tau2/(sigma*sigma+tau2))*std::pow(std::sqrt(2 * nu) * h, nu) * bessel_k(std::sqrt(2 * nu) * h, nu, 1.0)
                 / (std::tgamma(nu) * std::pow(2, nu - 1));
     
 
