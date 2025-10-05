@@ -1,201 +1,174 @@
 // Copyright (C) Luca Crippa <luca7.crippa@mail.polimi.it>
 // Copyright (C) Giacomo De Carlo <giacomo.decarlo@mail.polimi.it>
-#include <Rmath.h>
-#include "variogramfunctions.hpp"
+
+#include <chrono>
+#include <cppad/cppad.hpp>
+#include <cppad/ipopt/solve.hpp>
+#include "variogramfit.hpp"
+#include "LBFGS/LBFGS.h"
 
 namespace LocallyStationaryModels {
-using namespace cd;
 
-double VariogramFunction::compute_anisotropic_h(
-    const double& lambda1, const double& lambda2, const double& phi, const double& x, const double& y)
+using namespace CppAD;
+using namespace std::chrono;
+using cd = CppAD::vector<double>;
+
+// class VariogramFit
+VariogramFit::VariogramFit(const Eigen::MatrixXd& empvar,
+                           const Eigen::MatrixXd& sqweights,
+                           const size_t& dim,
+                           const std::vector<std::string>& id,
+                           const Eigen::VectorXd& x,
+                           const Eigen::VectorXd& y)
+  : m_empvar(empvar)
+  , m_sqweights(sqweights)
+  , m_dim(dim)
+  , m_crosscov(id, dim, id.size())
+  , m_x(x)
+  , m_y(y) {};
+
+template <class Type>
+Type VariogramFit::operator()(const CppAD::vector<Type>& parameters)
 {
-  double xx = x * x;
-  double yy = y * y;
-  double xy = x * y;
+  Type cost = 0;
+  matrix_t<Type> B(m_dim, m_dim);
+  vector_t<Type> params(m_dim * (m_dim + 1) / 2);
+  vector_t<Type> p(m_r * 4);
+  matrix_t<Type> cross(m_dim, m_dim);
   
-  double denominator = lambda1 * lambda1 * lambda2 * lambda2;
-  
-  if (denominator < 1e-12) {
-    return 1e12;
+  for (size_t u = 0; u < m_r; u++) {
+    p[4 * u] = parameters[m_r * m_dim * (m_dim + 1) / 2 + 4 * u];
+    p[4 * u + 1] = parameters[m_r * m_dim * (m_dim + 1) / 2 + 4 * u + 1];
+    p[4 * u + 2] = parameters[m_r * m_dim * (m_dim + 1) / 2 + 4 * u + 2];
+    p[4 * u + 3] = parameters[m_r * m_dim * (m_dim + 1) / 2 + 4 * u + 3];
   }
-  
-  double argument = (lambda2 * lambda2 * xx * cos(phi) * cos(phi) + lambda1 * lambda1 * yy * cos(phi) * cos(phi)
-                       + lambda1 * lambda1 * xx * sin(phi) * sin(phi) + lambda2 * lambda2 * yy * sin(phi) * sin(phi)
-                       - lambda1 * lambda1 * xy * sin(2 * phi) + lambda2 * lambda2 * xy * sin(2 * phi))
-                       / denominator;
-                       
-                       return sqrt(std::max(0.0, argument));
-}
-
-double VariogramFunction::correlation(
-    const cd::vector& params1, const cd::vector& params2, const double& x, const double& y)
-{
-  double lambda1_1 = params1[0];
-  double lambda2_1 = params1[1];
-  double phi_1 = params1[2];
-  double lambda1_2 = params2[0];
-  double lambda2_2 = params2[1];
-  double phi_2 = params2[2];
-  
-  cd::matrix rot1(2,2), rot2(2,2), eig1(2,2), eig2(2,2);
-  
-  rot1 << cos(phi_1), -sin(phi_1)  , +sin(phi_1), cos(phi_1);
-  rot2 << cos(phi_2), -sin(phi_2)  , +sin(phi_2), cos(phi_2);
-  eig1 << 1.0/lambda1_1, 0, 0, 1.0/lambda2_1;
-  eig2 << 1.0/lambda1_2, 0, 0, 1.0/lambda2_2;
-  
-  cd::matrix anis1(rot1*eig1*eig1*rot1.transpose());
-  cd::matrix anis2(rot2*eig2*eig2*rot2.transpose());
-  Eigen::Matrix<double, 2, 2> anistot((anis1+anis2)/2);
-  
-  cd::vector s(2);
-  s << x, y;
-  
-  double h_squared = s.dot(anistot.inverse() * s);
-  // Protect against floating point error here as well
-  double h = sqrt(std::max(0.0, h_squared));
-  
-  return 2.0 * sqrt( (lambda1_1 * lambda1_2 * lambda2_1 * lambda2_2) / ( (2*anistot).determinant() ) ) * exp(-h);
-}
-
-double VariogramFunction::operator()(
-    const cd::vector& params1, const cd::vector& params2, const double& x, const double& y)
-{
-  double sigma_1 = params1[3];
-  double sigma_2 = params2[3];
-  return sigma_1*sigma_2*(1.0 - this->correlation(params1, params2, x, y));
-}
-
-double VariogramFunction::operator()(const cd::vector& params, const double& x, const double& y)
-{
-  return params[3]*params[3]*(1-this->correlation(params, x, y));
-}
-
-
-double Exponential::correlation(const cd::vector& params, const double& x, const double& y)
-{
-  double lambda1 = params[0];
-  double lambda2 = params[1];
-  double phi = params[2];
-  double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-  return exp(-h);
-}
-
-double ExponentialNugget::correlation(const cd::vector& params, const double& x, const double& y)
-{
-  double lambda1 = params[0];
-  double lambda2 = params[1];
-  double phi = params[2];
-  double sigma = params[3];
-  double tau2 = params[4];
-  double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-  if (h < 1e-9) {
-    return 1.0;
+  for (size_t i = 0; i < m_empvar.cols(); i++) {
+    cross.setZero();
+    for (size_t u = 0; u < m_r; u++) {
+      size_t count = 0;
+      for (size_t k = 0; k < m_dim; k++) {
+        for (size_t l = k; l < m_dim; l++) {
+          params[count] = parameters[u * m_dim * (m_dim + 1) / 2 + count];
+          count++;
+        }
+      }
+      B = m_crosscov.reconstruct_matrix(params, u);
+      
+      vector_t<Type> temp_p(4);
+      temp_p[0] = p[4 * u];
+      temp_p[1] = p[4 * u + 1];
+      temp_p[2] = p[4 * u + 2];
+      temp_p[3] = p[4 * u + 3];
+      cross += B * (1 - m_crosscov.m_v[u]->correlation(temp_p, m_x[i], m_y[i]));
+    }
+    
+    matrix_t<Type> diff(m_dim, m_dim);
+    for (size_t k = 0; k < m_dim; k++) {
+      for (size_t l = 0; l < m_dim; l++) {
+        diff(k, l) = (cross(k, l) - m_empvar(i, k * m_dim + l));
+      }
+    }
+    cost += (diff.array() * diff.array() * m_sqweights(i, 0)).sum();
   }
-  
-  return (1.0 - tau2/(sigma*sigma+tau2))*exp(-h);
-  
+  return cost;
 }
 
-double ExponentialNugget::operator()(const cd::vector& params, const double& x, const double& y)
+// class VariogramFitScalar
+VariogramFitScalar::VariogramFitScalar(const Eigen::VectorXd& empvar,
+                                       const Eigen::VectorXd& weights,
+                                       const std::vector<std::string>& id,
+                                       const Eigen::VectorXd& x,
+                                       const Eigen::VectorXd& y)
+  : m_empvar(empvar)
+  , m_weights(weights)
+  , m_x(x)
+  , m_y(y)
 {
-  return (params[3]*params[3]+params[4])*(1-this->correlation(params, x, y));
+  m_v = make_variogramiso(id[0]);
 }
 
-double Matern::correlation(const cd::vector& params, const double& x, const double& y)
+template <class Type>
+Type VariogramFitScalar::operator()(const CppAD::vector<Type>& parameters)
 {
-  double lambda1 = params[0];
-  double lambda2 = params[1];
-  double phi = params[2];
-  double nu = params[4];
-  
-  double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-  
-  if (h < 1e-9) {
-    return 1.0;
+  Type cost = 0;
+  for (size_t i = 0; i < m_empvar.size(); i++) {
+    cost += m_weights[i] * CppAD::pow(m_v->operator()(parameters, m_x[i], m_y[i]) - m_empvar[i], 2);
   }
-  
-  double h_nu = std::sqrt(2 * nu) * h;
-  double result = (std::pow(h_nu, nu) * bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
-  
-  if (!std::isfinite(result)) {
-    return 0.0;
-  }
-  return result;
+  return cost;
 }
 
-double Nugget::correlation(const cd::vector& params, const double& x, const double& y)
+// class VariogramFitLBFGS
+VariogramFitLBFGS::VariogramFitLBFGS(const Eigen::VectorXd& empvar,
+                                     const Eigen::VectorXd& weights,
+                                     const std::vector<std::string>& id,
+                                     const Eigen::VectorXd& x,
+                                     const Eigen::VectorXd& y,
+                                     const size_t& dim,
+                                     const size_t& r)
+  : m_empvar(empvar)
+  , m_weights(weights)
+  , m_x(x)
+  , m_y(y)
+  , m_crosscov(id, dim, r)
+  , m_dim(dim)
+  , m_r(r) {};
+
+double VariogramFitLBFGS::operator()(const Eigen::VectorXd& parameters, Eigen::VectorXd& grad)
 {
-  double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
-  if (h < 1e-9) {
-    return 1.0;
+  double cost = 0;
+  cd::vector ind(parameters.size());
+  for (size_t i = 0; i < parameters.size(); i++) {
+    ind[i] = parameters[i];
   }
-  return 0.0;
+  auto fun = [this](cd::vector p) {
+    double cost = 0;
+    Eigen::MatrixXd B(m_dim, m_dim);
+    Eigen::VectorXd params(m_dim * (m_dim + 1) / 2);
+    Eigen::VectorXd par(m_r * 4);
+    Eigen::MatrixXd cross(m_dim, m_dim);
+    
+    for (size_t u = 0; u < m_r; u++) {
+      par[4 * u] = p[m_r * m_dim * (m_dim + 1) / 2 + 4 * u];
+      par[4 * u + 1] = p[m_r * m_dim * (m_dim + 1) / 2 + 4 * u + 1];
+      par[4 * u + 2] = p[m_r * m_dim * (m_dim + 1) / 2 + 4 * u + 2];
+      par[4 * u + 3] = p[m_r * m_dim * (m_dim + 1) / 2 + 4 * u + 3];
+    }
+    
+    for (size_t i = 0; i < m_empvar.size(); i++) {
+      cross.setZero();
+      for (size_t u = 0; u < m_r; u++) {
+        size_t count = 0;
+        for (size_t k = 0; k < m_dim; k++) {
+          for (size_t l = k; l < m_dim; l++) {
+            params[count] = p[u * m_dim * (m_dim + 1) / 2 + count];
+            count++;
+          }
+        }
+        B = m_crosscov.reconstruct_matrix(params, u);
+        Eigen::VectorXd temp_p(4);
+        temp_p << par[4 * u], par[4 * u + 1], par[4 * u + 2], par[4 * u + 3];
+        cross += B * (1 - m_crosscov.m_v[u]->correlation(temp_p, m_x[i], m_y[i]));
+      }
+      
+      Eigen::MatrixXd diff(m_dim, m_dim);
+      for (size_t k = 0; k < m_dim; k++) {
+        for (size_t l = 0; l < m_dim; l++) {
+          diff(k, l) = (cross(k, l) - m_empvar(i, k * m_dim + l));
+        }
+      }
+      cost += (diff.array() * diff.array() * m_weights(i, 0)).sum();
+    }
+    return cost;
+  };
+  cd::vector g = CppAD::gradient(fun, ind);
+  for (size_t i = 0; i < parameters.size(); i++) {
+    grad[i] = g[i];
+  }
+  cost = fun(ind);
+  return cost;
 }
 
-double MaternNuFixed::correlation(const cd::vector& params, const double& x, const double& y)
-{
-  double lambda1 = params[0];
-  double lambda2 = params[1];
-  double phi = params[2];
-  double nu = m_nu;
-  
-  double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-  
-  if (h < 1e-9) {
-    return 1.0;
-  }
-  
-  double h_nu = std::sqrt(2 * nu) * h;
-  double result = (std::pow(h_nu, nu) * bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
-  
-  if (!std::isfinite(result)) {
-    return 0.0;
-  }
-  return result;
-}
-
-double MaternNuNugget::correlation(const cd::vector& params, const double& x, const double& y)
-{
-  double lambda1 = params[0];
-  double lambda2 = params[1];
-  double phi = params[2];
-  double sigma = params[3];
-  double tau2 = params[4];
-  double nu = m_nu;
-  
-  double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-  
-  if (h < 1e-9) {
-    return 1.0;
-  }
-  
-  double h_nu = std::sqrt(2 * nu) * h;
-  double matern_corr = (std::pow(h_nu, nu) * bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
-  
-  if (!std::isfinite(matern_corr)) {
-    matern_corr = 0.0;
-  }
-  
-  return (1.0 - tau2/(sigma*sigma+tau2)) * matern_corr;
-}
-
-double MaternNuNugget::operator()(const cd::vector& params, const double& x, const double& y)
-{
-  return (params[3]*params[3]+params[4])*(1-this->correlation(params, x, y));
-}
-
-double Gaussian::correlation(const cd::vector& params, const double& x, const double& y)
-{
-  double lambda1 = params[0];
-  double lambda2 = params[1];
-  double phi = params[2];
-  
-  double h = compute_anisotropic_h(lambda1, lambda2, phi, x, y);
-  return exp(-h * h);
-}
-
-std::shared_prt<VariogramFunction> make_variogramiso(const std::string& id)
+std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id)
 {
   if (id == "exponential" || id == "esponenziale" || id == "exp") {
     return std::make_shared<Exponential>();
@@ -212,6 +185,7 @@ std::shared_prt<VariogramFunction> make_variogramiso(const std::string& id)
   if (id == "exponentialnugget" || id == "ExponentialNugget") {
     return std::make_shared<ExponentialNugget>();
   }
+  // using the following method we can set directly from R passing a string a constant value for nu
   if (id.substr(0, 13) == "maternNuFixed") {
     try {
       double NU = std::stod(id.substr(14));
@@ -232,4 +206,3 @@ std::shared_prt<VariogramFunction> make_variogramiso(const std::string& id)
   return std::make_shared<Exponential>();
 }
 } // namespace LocallyStationaryModels
-
