@@ -1,6 +1,7 @@
 // Copyright (C) Luca Crippa <luca7.crippa@mail.polimi.it>
 // Copyright (C) Giacomo De Carlo <giacomo.decarlo@mail.polimi.it>
-#include <Rmath.h>
+
+#include <Rmath.h> 
 #include "variogramfunctions.hpp"
 
 namespace LocallyStationaryModels {
@@ -20,6 +21,7 @@ double VariogramFunction::compute_anisotropic_h(
                        / denominator;
                        return sqrt(std::max(0.0, argument));
 }
+
 double VariogramFunction::correlation(
     const cd::vector& params1, const cd::vector& params2, const double& x, const double& y)
 {
@@ -38,30 +40,36 @@ double VariogramFunction::correlation(
   double h = sqrt(std::max(0.0, h_squared));
   return 2.0 * sqrt( (lambda1_1 * lambda1_2 * lambda2_1 * lambda2_2) / ( (2*anistot).determinant() ) ) * exp(-h);
 }
+
 double VariogramFunction::operator()(
     const cd::vector& params1, const cd::vector& params2, const double& x, const double& y)
 {
   double sigma_1 = params1[3]; double sigma_2 = params2[3];
   return sigma_1*sigma_2*(1.0 - this->correlation(params1, params2, x, y));
 }
+
 double VariogramFunction::operator()(const cd::vector& params, const double& x, const double& y)
 {
   return params[3]*params[3]*(1-this->correlation(params, x, y));
 }
+
 double Exponential::correlation(const cd::vector& params, const double& x, const double& y)
 {
   return exp(-compute_anisotropic_h(params[0], params[1], params[2], x, y));
 }
+
 double ExponentialNugget::correlation(const cd::vector& params, const double& x, const double& y)
 {
   double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
   if (h < 1e-9) { return 1.0; }
   return (1.0 - params[4]/(params[3]*params[3]+params[4]))*exp(-h);
 }
+
 double ExponentialNugget::operator()(const cd::vector& params, const double& x, const double& y)
 {
   return (params[3]*params[3]+params[4])*(1-this->correlation(params, x, y));
 }
+
 double Matern::correlation(const cd::vector& params, const double& x, const double& y)
 {
   double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
@@ -72,12 +80,14 @@ double Matern::correlation(const cd::vector& params, const double& x, const doub
   if (!std::isfinite(result)) { return 0.0; }
   return result;
 }
+
 double Nugget::correlation(const cd::vector& params, const double& x, const double& y)
 {
   double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
   if (h < 1e-9) { return 1.0; }
   return 0.0;
 }
+
 double MaternNuFixed::correlation(const cd::vector& params, const double& x, const double& y)
 {
   double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
@@ -88,21 +98,23 @@ double MaternNuFixed::correlation(const cd::vector& params, const double& x, con
   if (!std::isfinite(result)) { return 0.0; }
   return result;
 }
+
 double MaternNuNugget::correlation(const cd::vector& params, const double& x, const double& y)
 {
   double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
   if (h < 1e-9) { return 1.0; }
   double sigma = params[3]; double tau2 = params[4]; double nu = m_nu;
   double h_nu = std::sqrt(2 * nu) * h;
-  // --- FIX: Added R:: namespace ---
   double matern_corr = (std::pow(h_nu, nu) * R::bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
   if (!std::isfinite(matern_corr)) { matern_corr = 0.0; }
   return (1.0 - tau2/(sigma*sigma+tau2)) * matern_corr;
 }
+
 double MaternNuNugget::operator()(const cd::vector& params, const double& x, const double& y)
 {
   return (params[3]*params[3]+params[4])*(1-this->correlation(params, x, y));
 }
+
 double Gaussian::correlation(const cd::vector& params, const double& x, const double& y)
 {
   double h = compute_anisotropic_h(params[0], params[1], params[2], x, y);
@@ -111,4 +123,3 @@ double Gaussian::correlation(const cd::vector& params, const double& x, const do
 
 
 } // namespace LocallyStationaryModels
-
