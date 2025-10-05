@@ -56,7 +56,12 @@ class MaternNuFixed : public VariogramFunction {
 private:
   double m_nu = 0.5;
 public:
-  MaternNuFixed(const double& nu) : m_nu(nu) {};
+  // FIX: Add validation to ensure nu is positive on creation.
+  MaternNuFixed(const double& nu) : m_nu(nu) {
+    if (m_nu <= 0) {
+      Rcpp::stop("Matern smoothness parameter 'nu' must be positive.");
+    }
+  };
   double correlation(const cd::vector& params, const double& x, const double& y) override;
 };
 
@@ -76,7 +81,12 @@ class MaternNuNugget : public VariogramFunction {
 private:
   double m_nu = 0.5;
 public:
-  MaternNuNugget(const double& nu) : m_nu(nu) {};
+  // FIX: Add validation to ensure nu is positive on creation.
+  MaternNuNugget(const double& nu) : m_nu(nu) {
+    if (m_nu <= 0) {
+      Rcpp::stop("Matern smoothness parameter 'nu' must be positive.");
+    }
+  };
   double correlation(const cd::vector& params, const double& x, const double& y) override;
   double operator()(const cd::vector& params, const double& x, const double& y) override;
 };
@@ -162,3 +172,4 @@ inline std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& i
 } // namespace LocallyStationaryModels
 
 #endif // LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
+

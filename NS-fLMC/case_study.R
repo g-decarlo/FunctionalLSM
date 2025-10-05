@@ -1,7 +1,7 @@
 # 1. Setup ----
 # Install and load necessary packages
 library(devtools)
-install_github("g-decarlo/FunctionalLSM")
+install_github("g-decarlo/FunctionalLSM", ref = "gdecarlo/case-study")
 library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(
@@ -101,7 +101,7 @@ solu_trace <- findsolutions.lsm(
   upper.bound = c(25, 25, pi / 2, 20, 200),
   lower.bound = c(2, 2, 0, 1e-8, 1e-8),
   initial.position = c(10, 10, pi / 3, 10, 50),
-  id = "maternnunugget 5",
+  id = "maternnufixed5",
 )
 solu_trace$solutions
 
