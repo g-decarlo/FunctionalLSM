@@ -3,7 +3,7 @@
 #include <Rmath.h>
 #include "variogramfunctions.hpp"
 #include <string>
-#include <algorithm>
+#include <algorithm> // For std::transform
 
 namespace LocallyStationaryModels {
 using namespace cd;
@@ -200,30 +200,38 @@ double Gaussian::correlation(const cd::vector& params, const double& x, const do
 
 std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id)
 {
-  if (id == "exponential" || id == "esponenziale" || id == "exp") {
+  std::string lower_id = id;
+  std::transform(lower_id.begin(), lower_id.end(), lower_id.begin(), ::tolower);
+  
+  if (lower_id == "exponential" || lower_id == "esponenziale" || lower_id == "exp") {
     return std::make_shared<Exponential>();
   }
-  if (id == "matern" || id == "Matern") {
+  if (lower_id == "matern") {
     return std::make_shared<Matern>();
   }
-  if (id == "gaussian" || id == "Gaussian") {
+  if (lower_id == "gaussian") {
     return std::make_shared<Gaussian>();
   }
-  if (id == "nugget" || id == "Nugget") {
+  if (lower_id == "nugget") {
     return std::make_shared<Nugget>();
   }
-  if (id == "exponentialnugget" || id == "ExponentialNugget") {
+  if (lower_id == "exponentialnugget") {
     return std::make_shared<ExponentialNugget>();
   }
   
-  // --- ROBUST PARSING FOR MATERN WITH FIXED NU ---
-  std::string base_nugget = "maternNuNugget";
-  std::string base_fixed = "maternNuFixed";
+  std::string base_nugget_long = "maternununugget";
+  std::string base_nugget_short = "maternunugget";
+  std::string base_fixed_long = "maternunufixed";
+  std::string base_fixed_short = "maternufixed";
   
-  if (id.rfind(base_nugget, 0) == 0) { // Check if string starts with base_nugget
+  if (lower_id.rfind(base_nugget_long, 0) == 0 || lower_id.rfind(base_nugget_short, 0) == 0) {
     try {
-      std::string nu_str = id.substr(base_nugget.length());
-      // Remove leading non-digit characters like space or underscore
+      std::string nu_str;
+      if (lower_id.rfind(base_nugget_long, 0) == 0) {
+        nu_str = lower_id.substr(base_nugget_long.length());
+      } else {
+        nu_str = lower_id.substr(base_nugget_short.length());
+      }
       nu_str.erase(0, nu_str.find_first_of("0123456789."));
       double NU = std::stod(nu_str);
       return std::make_shared<MaternNuNugget>(NU);
@@ -232,10 +240,14 @@ std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id)
     }
   }
   
-  if (id.rfind(base_fixed, 0) == 0) { // Check if string starts with base_fixed
+  if (lower_id.rfind(base_fixed_long, 0) == 0 || lower_id.rfind(base_fixed_short, 0) == 0) {
     try {
-      std::string nu_str = id.substr(base_fixed.length());
-      // Remove leading non-digit characters like space or underscore
+      std::string nu_str;
+      if (lower_id.rfind(base_fixed_long, 0) == 0) {
+        nu_str = lower_id.substr(base_fixed_long.length());
+      } else {
+        nu_str = lower_id.substr(base_fixed_short.length());
+      }
       nu_str.erase(0, nu_str.find_first_of("0123456789."));
       double NU = std::stod(nu_str);
       return std::make_shared<MaternNuFixed>(NU);
