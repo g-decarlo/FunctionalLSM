@@ -1,8 +1,8 @@
 // Copyright (C) Luca Crippa <luca7.crippa@mail.polimi.it>
 // Copyright (C) Giacomo De Carlo <giacomo.decarlo@mail.polimi.it>
 
-#ifndef LOCALLY_STATIONARY_MODELS_VARIOGRAMFUNCTIONS
-#define LOCALLY_STATIONARY_MODELS_VARIOGRAMFUNCTIONS
+#ifndef LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
+#define LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
 
 #include "traits.hpp"
 #include <string>
@@ -79,5 +79,5 @@ std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id);
 
 } // namespace LocallyStationaryModels
 
-#endif // LOCALLY_STATIONARY_MODELS_VARIOGRAMFUNCTIONS
+#endif // LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
 
