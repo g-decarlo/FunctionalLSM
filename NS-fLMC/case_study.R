@@ -1,7 +1,7 @@
 # 1. Setup ----
 # Install and load necessary packages
 library(devtools)
-install_github("g-decarlo/FunctionalLSM")
+#install_github("g-decarlo/FunctionalLSM")
 library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(
@@ -58,7 +58,7 @@ smoothed_splines <- smoothSplines(
 # Perform PCA and select components that explain most of the variance
 pca_result <- prcomp(smoothed_splines$Y_clr, scale. = TRUE, center = TRUE)
 variance_explained <- cumsum(pca_result$sdev^2) / sum(pca_result$sdev^2)
-num_components <- which(variance_explained > 0.99)[1]
+num_components <- which(variance_explained > 0.995)[1]
 z_scores <- pca_result$x[, 1:num_components]
 
 # Plot some density realizations
@@ -101,7 +101,7 @@ solu_trace <- findsolutions.lsm(
   upper.bound = c(10, 10, pi / 2, 8, 200),
   lower.bound = c(1e-8, 1e-8, 0, 1e-8, 1e-8),
   initial.position = c(2, 2, pi / 12, 6, 100),
-  id = "MaternNuFixed 2.5"
+  id = "MaternNuFixed 2.5 Nugget"
 )
 
 
@@ -123,10 +123,10 @@ solu_clr <- findsolutions.lsm(
   vario_clr,
   remove_not_convergent = TRUE,
   lower.delta = 1,
-  upper.bound = c(10, 10, pi / 2, 8, 200),
-  lower.bound = c(1e-8, 1e-8, 0, 1e-8, 1e-8),
+  upper.bound = c(20, 20, pi / 2, 8, 200),
+  lower.bound = c(2, 2, 0, 1, 1e-8),
   initial.position = c(2, 2, pi / 12, 6, 100),
-  id = "exponential"
+  id = "exponentialnugget"
 )
 
 
@@ -146,7 +146,7 @@ smoothed_params_prob <- smooth.lsm(solu_clr, coords)
 plot_df_densities <- data.frame(
   x = coords[, 1],
   y = coords[, 2],
-  sigma = smoothed_params_densities$parameters[, 4]
+  sigma = solu_trace$solutions[, 4]
 )
 
 p_sigma_densities <- ggplot(plot_df_densities, aes(x = x, y = y, color = sigma)) +
