@@ -1,7 +1,8 @@
-# analysis.R
-
 # 1. Setup ----
 # Install and load necessary packages
+library(devtools)
+install_github("g-decarlo/FunctionalLSM")
+library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(
   compositions,
@@ -24,9 +25,9 @@ if (!dir.exists("plots")) {
 
 # 2. Data Loading and Preprocessing ----
 # Load the datasets
-coords <- as.matrix(read.csv("coordinatesrain.csv"))
-rain_obs <- read.csv("rainobservations.csv")
-density_mat <- as.matrix(read.table("density_matrix.prn", as.is = TRUE))
+coords <- as.matrix(read.csv("~/FunctionalLSM/NS-fLMC/data/coordinatesrain.csv"))
+rain_obs <- read.csv("~/FunctionalLSM/NS-fLMC/data/rainobservations.csv")
+density_mat <- as.matrix(read.table("~/FunctionalLSM/NS-fLMC/data/density_matrix.prn", as.is = TRUE))
 colnames(density_mat) <- NULL
 density_mat <- unname(density_mat)
 density_mat <- matrix(density_mat, nrow = dim(coords)[1], ncol = 60)
@@ -85,26 +86,22 @@ vario_trace <- variogram.lsm(
   z = z_scores,
   d = coords,
   a = anchor_points$anchorpoints,
-  epsilon = 500,
-  n_angles = 8,
-  n_intervals = 16,
-  dim = num_components,
+  epsilon = 5,
+  n_angles = 6,
+  n_intervals = 24,
+  dim = 1,
   kernel_id = "gaussian"
 )
-
-# Plot the empirical variogram for the first component
-plotvario(vario_trace, 1)
-ggsave("plots/empirical_variogram_densities.png", width = 8, height = 6)
 
 # Fit the non-stationary model
 solu_trace <- findsolutions.lsm(
   vario_trace,
   remove_not_convergent = TRUE,
   lower.delta = 0.5,
-  upper.bound = c(Inf, Inf, pi / 2, Inf, Inf),
+  upper.bound = c(10, 10, pi / 2, 8, 200),
   lower.bound = c(1e-8, 1e-8, 0, 1e-8, 1e-8),
-  initial.position = c(200, 200, pi / 4, 1, 0.1),
-  id = "maternNuFixed 1.5"
+  initial.position = c(2, 2, pi / 12, 6, 100),
+  id = "MaternNuFixed 2.5"
 )
 
 
@@ -114,26 +111,21 @@ vario_clr <- variogram.lsm(
   z = clr_rain,
   d = coords,
   a = anchor_points$anchorpoints,
-  epsilon = 600,
+  epsilon = 5,
   n_angles = 8,
   n_intervals = 16,
   dim = 1,
   kernel_id = "gaussian"
 )
 
-# Plot the empirical variogram
-plotvario(vario_clr, 1)
-ggsave("plots/empirical_variogram_prob.png", width = 8, height = 6)
-
-
 # Fit the non-stationary model
 solu_clr <- findsolutions.lsm(
   vario_clr,
   remove_not_convergent = TRUE,
   lower.delta = 1,
-  upper.bound = c(Inf, Inf, pi / 2, Inf, Inf),
+  upper.bound = c(10, 10, pi / 2, 8, 200),
   lower.bound = c(1e-8, 1e-8, 0, 1e-8, 1e-8),
-  initial.position = c(200, 200, pi / 4, 1, 0.1),
+  initial.position = c(2, 2, pi / 12, 6, 100),
   id = "exponential"
 )
 
@@ -154,7 +146,7 @@ smoothed_params_prob <- smooth.lsm(solu_clr, coords)
 plot_df_densities <- data.frame(
   x = coords[, 1],
   y = coords[, 2],
-  sigma = smoothed_params_densities[, 4]
+  sigma = smoothed_params_densities$parameters[, 4]
 )
 
 p_sigma_densities <- ggplot(plot_df_densities, aes(x = x, y = y, color = sigma)) +
