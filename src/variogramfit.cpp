@@ -2,13 +2,17 @@
 // Copyright (C) Giacomo De Carlo <giacomo.decarlo@mail.polimi.it>
 
 #include "variogramfit.hpp"
-#include "variogramfunctions.hpp" // Ensure header is included for declarations
+#include "variogramfunctions.hpp"
 #include "LBFGS/LBFGSB.h"
 #include <iostream>
 
-namespace LocallyStationaryModels {
+namespace LocallyStationaryModels { 
 using namespace cd;
 using namespace LBFGSpp;
+
+//================================================================================
+// TargetFunction Implementation
+//================================================================================
 
 TargetFunction::TargetFunction(const cd::matrixptr& empiricvariogram, const cd::matrixptr& squaredweights,
                                const cd::vectorptr& mean_x, const cd::vectorptr& mean_y, const size_t& x0, const std::vector<std::string>& id, const size_t& dim)
@@ -22,6 +26,7 @@ TargetFunction::TargetFunction(const cd::matrixptr& empiricvariogram, const cd::
   , m_r(id.size())
   , m_dim(dim) {};
 
+// Scalar objective function
 double TargetFunction::operator()(const cd::vector& params)
 {
   if (m_dim != 1){
@@ -32,27 +37,15 @@ double TargetFunction::operator()(const cd::vector& params)
   vector w = m_squaredweights->row(m_x0);
   vector truegamma(m_empiricvariogram->rows());
   
-  double sill;
-  bool has_nugget = (params.size() == 5); // Models with nugget have 5 params (lambda1, lambda2, phi, sigma, tau2)
-  
-  if (has_nugget) {
-    double sigma2 = params[3] * params[3];
-    double tau2 = params[4];
-    sill = sigma2 + tau2;
-  } else {
-    double sigma2 = params[3] * params[3];
-    sill = sigma2;
-  }
-  
   for (size_t h = 0; h < truegamma.size(); ++h) {
-    double correlation = gammaiso.correlation(params, m_mean_x->operator[](h), m_mean_y->operator[](h));
-    truegamma[h] = sill * (1.0 - correlation);
+    truegamma[h] = gammaiso(params, m_mean_x->operator[](h), m_mean_y->operator[](h));
   }
   
   vector empiricgamma = m_empiricvariogram->col(m_x0);
   return w.dot((truegamma - empiricgamma).cwiseProduct(truegamma - empiricgamma));
 }
 
+// Multivariate objective function
 double TargetFunction::operator()(const cd::vector& params, const size_t& r)
 {
   vector w = m_squaredweights->row(m_x0);
@@ -60,7 +53,7 @@ double TargetFunction::operator()(const cd::vector& params, const size_t& r)
   matrix truegamma(rows, m_dim);
   matrix empiricgamma = m_empiricvariogram->block(0,m_x0*m_dim,rows,m_dim);
   std::vector<vector> paramvec;
-  unsigned n_params = 3; //TODO Fix variable number of parameters as a member of variogram function
+  unsigned n_params = 3; //TODO Fix variable number of parameters
   for (size_t i = 0, totparams = 0; i < r; i++ ){
     paramvec.push_back(params.segment(totparams, n_params + m_dim*(m_dim+1)/2));
     totparams += n_params + m_dim*(m_dim+1)/2;
@@ -72,6 +65,7 @@ double TargetFunction::operator()(const cd::vector& params, const size_t& r)
   return (truegamma - empiricgamma).squaredNorm();
 }
 
+// Scalar gradient function
 double TargetFunction::operator()(const cd::vector& params, vector& grad)
 {
   if (m_dim != 1){
@@ -100,6 +94,7 @@ double TargetFunction::operator()(const cd::vector& params, vector& grad)
   return TargetFunction::operator()(params);
 }
 
+// Multivariate gradient function
 double TargetFunction::operator()(const cd::vector& params, vector& grad, const size_t& r)
 {
   for (size_t i = 0; i < params.size(); ++i) {
@@ -123,6 +118,10 @@ double TargetFunction::operator()(const cd::vector& params, vector& grad, const 
   }
   return TargetFunction::operator()(params, r);
 }
+
+//================================================================================
+// Opt Class Implementation
+//================================================================================
 
 Opt::Opt(const cd::matrixptr& empiricvariogram, const cd::matrixptr& squaredweights, const cd::vectorptr& mean_x,
          const cd::vectorptr& mean_y, const size_t& dim, const std::vector<std::string>& id, const cd::vector& initialparameters,
