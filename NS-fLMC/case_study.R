@@ -1,7 +1,7 @@
 # 1. Setup ----
 # Install and load necessary packages
 library(devtools)
-install_github("g-decarlo/FunctionalLSM", ref = "gdecarlo/case-study")
+install_github("g-decarlo/FunctionalLSM")
 library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(
@@ -101,7 +101,7 @@ solu_trace <- findsolutions.lsm(
   upper.bound = c(25, 25, pi / 2, 20, 200),
   lower.bound = c(2, 2, 0, 1e-8, 1e-8),
   initial.position = c(10, 10, pi / 3, 10, 50),
-  id = "matern",
+  id = "exponentialnugget",
 )
 solu_trace$solutions
 
@@ -123,9 +123,9 @@ solu_clr <- findsolutions.lsm(
   vario_clr,
   remove_not_convergent = TRUE,
   lower.delta = 1,
-  upper.bound = c(20, 20, pi / 2, 8, 200),
-  lower.bound = c(2, 2, 0, 1, 1e-8),
-  initial.position = c(2, 2, pi / 12, 6, 100),
+  upper.bound = c(200, 200, pi / 2, 8, 200),
+  lower.bound = c(2, 2, 0, 0, 1e-8),
+  initial.position = c(2, 2, pi / 4, 6, 0.1),
   id = "exponentialnugget"
 )
 solu_clr$solutions
@@ -146,7 +146,7 @@ smoothed_params_prob <- smooth.lsm(solu_clr, coords)
 plot_df_densities <- data.frame(
   x = coords[, 1],
   y = coords[, 2],
-  sigma = solu_trace$solutions[, 4]
+  sigma = smoothed_params_densities$parameters[, 4]
 )
 
 p_sigma_densities <- ggplot(plot_df_densities, aes(x = x, y = y, color = sigma)) +
@@ -182,7 +182,7 @@ predictions_prob <- predict.lsm(solu_clr, grid_to_predict, plot_output = FALSE)
 plot_df_pred_densities <- data.frame(
   x = grid_to_predict[, 1],
   y = grid_to_predict[, 2],
-  predicted_mean = predictions_densities$predictedmean[, 1]
+  predicted_mean = predictions_densities$smoothed_means[, 1]
 )
 
 p_pred_densities <- ggplot(plot_df_pred_densities, aes(x = x, y = y, fill = predicted_mean)) +
