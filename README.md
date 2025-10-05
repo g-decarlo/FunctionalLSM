@@ -1,7 +1,7 @@
 <img src="LSM.png" alt="drawing" width="100"/> <br>
 # **LocallyStationaryModels**
-***authors:*** Luca Crippa, Giacomo De Carlo<br>
-***mailto:*** <luca7.crippa@mail.polimi.it>, <giacomo.decarlo@mail.polimi.it><br>
+***authors:*** Giacomo De Carlo, Luca Crippa<br>
+***mailto:*** <gdecarlo@retitech.ai>, <luca7.crippa@mail.polimi.it><br>
 ## **Installation**
 ### **Step 1: install R and Rstudio (optional)**
 #### **Windows:**
@@ -29,7 +29,7 @@ Open R and type:
 to install `devtools`. Then type:
 
     library(devtools)
-    devtools::install_github("elucasticus/LocallyStationaryModels")
+    devtools::install_github("g-decarlo/FunctionalLSM")
 
 to install `LocallyStationaryModels`.
 
