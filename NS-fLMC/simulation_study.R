@@ -1,6 +1,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# SCRIPT: Oracle Simulation for Trace-NS vs Op-NS Models
+# SCRIPT: Simulation for Trace-NS vs Op-NS Models
 #
 # DESCRIPTION:
 # This script conducts a comprehensive oracle simulation study to compare the
@@ -192,7 +192,6 @@ run_oracle_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p
     for (j in i:N_train) {
       R_ns_ij <- compute_R_NS(train_coords[i,], train_coords[j,], train_params[[i]], train_params[[j]])
       C_trace_ij <- sum(diag(train_params[[i]]$A %*% t(train_params[[j]]$A))) * R_ns_ij
-      # This is not cokriging, it's kriging component by component with same cov
       for(k in 1:p){
         C_trace_train[(i-1)*p+k, (j-1)*p+k] <- C_trace_ij
         if(i!=j) C_trace_train[(j-1)*p+k, (i-1)*p+k] <- C_trace_ij
@@ -432,13 +431,11 @@ plot_data_pval <- summary_stats %>%
 plot_data_final <- bind_rows(plot_data_diff, plot_data_pval) %>%
   mutate(Metric = factor(Metric, levels = c("MSPE Difference", "Paired t-test p-value")))
 
-# Data for horizontal lines (y=0 for difference, y=0.05 for p-value)
 hline_data <- data.frame(
   Metric = factor(levels(plot_data_final$Metric), levels = levels(plot_data_final$Metric)),
   intercept = c(0, 0.05)
 )
 
-# Generate the final publication-quality plot
 significance_plot <- ggplot(plot_data_final, aes(x = N_train, y = Value)) +
   geom_hline(data = hline_data, aes(yintercept = intercept), linetype = "dashed", color = "black", linewidth = 0.75) +
   geom_ribbon(data = . %>% filter(Metric == "MSPE Difference"),
