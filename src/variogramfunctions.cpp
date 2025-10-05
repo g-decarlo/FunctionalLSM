@@ -68,7 +68,7 @@ double Matern::correlation(const cd::vector& params, const double& x, const doub
   if (h < 1e-9) { return 1.0; }
   double nu = params[4];
   double h_nu = std::sqrt(2 * nu) * h;
-  double result = (std::pow(h_nu, nu) * bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
+  double result = (std::pow(h_nu, nu) * R::bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
   if (!std::isfinite(result)) { return 0.0; }
   return result;
 }
@@ -84,7 +84,7 @@ double MaternNuFixed::correlation(const cd::vector& params, const double& x, con
   if (h < 1e-9) { return 1.0; }
   double nu = m_nu;
   double h_nu = std::sqrt(2 * nu) * h;
-  double result = (std::pow(h_nu, nu) * bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
+  double result = (std::pow(h_nu, nu) * R::bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
   if (!std::isfinite(result)) { return 0.0; }
   return result;
 }
@@ -94,7 +94,8 @@ double MaternNuNugget::correlation(const cd::vector& params, const double& x, co
   if (h < 1e-9) { return 1.0; }
   double sigma = params[3]; double tau2 = params[4]; double nu = m_nu;
   double h_nu = std::sqrt(2 * nu) * h;
-  double matern_corr = (std::pow(h_nu, nu) * bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
+  // --- FIX: Added R:: namespace ---
+  double matern_corr = (std::pow(h_nu, nu) * R::bessel_k(h_nu, nu, 1.0) * exp(-h_nu)) / (std::tgamma(nu) * std::pow(2.0, nu - 1.0));
   if (!std::isfinite(matern_corr)) { matern_corr = 0.0; }
   return (1.0 - tau2/(sigma*sigma+tau2)) * matern_corr;
 }
@@ -108,7 +109,6 @@ double Gaussian::correlation(const cd::vector& params, const double& x, const do
   return exp(-h * h);
 }
 
-// The implementation of make_variogramiso has been moved to the header file.
 
 } // namespace LocallyStationaryModels
 
