@@ -1,7 +1,9 @@
 .Rproj.user
 .Rhistory
-.RData
+*.RData
 .Ruserdata
 src/*.o
 src/*.so
 src/*.dll
+*.png
+*.DS_Store

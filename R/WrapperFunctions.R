@@ -88,11 +88,15 @@ findsolutions.lsm<-function(vario, id, initial.position, lower.bound = rep(1e-8,
 #' vario <- variogram.lsm(y,d,a$anchorpoints,370,8,8,"gaussian")
 #' solu <- findsolutions.lsm(vario, "exponential", c(200,200,0.01,100))
 #' previsions <- predict.lsm(solu, d)
-predict.lsm<-function(sol, newpos, plot_output = TRUE, print_output = TRUE, n_threads = -1, predict_y=T)
+predict.lsm<-function(sol, newpos, dim = -1, plot_output = TRUE, print_output = TRUE, n_threads = -1, predict_y=T)
 {
+  if (dim == -1){
+    dim = sol$dim
+  }
+    
   d <- sol$initial_coordinates
   z <- sol$initial_z
-  predictedvalues <- predikt(as.matrix(z),d,sol$anchorpoints,sol$epsilon,sol$delta,sol$dim,sol$solutions,newpos,sol$id,sol$kernel_id,print_output, n_threads, predict_y)
+  predictedvalues <- predikt(as.matrix(z),d,sol$anchorpoints,sol$epsilon,sol$delta,dim,sol$solutions,newpos,sol$id,sol$kernel_id,print_output, n_threads, predict_y)
   if (plot_output)
   {
     par(ask=TRUE)
