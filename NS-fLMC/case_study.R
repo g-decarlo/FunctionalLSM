@@ -101,7 +101,7 @@ solu_trace <- findsolutions.lsm(
   upper.bound = c(25, 25, pi / 2, 20, 200),
   lower.bound = c(2, 2, 0, 1e-8, 1e-8),
   initial.position = c(10, 10, pi / 3, 10, 50),
-  id = "maternnufixed5",
+  id = "matern",
 )
 solu_trace$solutions
 
