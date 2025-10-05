@@ -34,11 +34,8 @@ solu <- findsolutions.lsm(vario ,lower.delta = 1, c("nugget","exp"), c(250,250,0
 # Plot of the solutions
 solu$solutions
 
-<<<<<<< HEAD
 vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
-=======
- vario1 <- variogram.lsm(cbind(y,y2),d,a$anchorpoints,570,4,15,dim = 1,kernel_id = "gaussian")
->>>>>>> main
+
 
 solu <- findsolutions.lsm(vario1, "exponential", c(300,200,0.01,100,10), remove_not_convergent = T)
 solu$solutions

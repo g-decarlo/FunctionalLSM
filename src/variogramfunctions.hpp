@@ -9,7 +9,6 @@
 namespace LocallyStationaryModels {
 class VariogramFunction {
 protected:
-<<<<<<< HEAD
   /**
    * \brief convert the isotropic variogram in the equivalent anisotropic one calculating the norm of the spatial lag
    * rotated and expanded according to the eigenvalues and eigenvector of the anisotropy matrix
@@ -38,60 +37,20 @@ public:
    * parameters center of stationarity
    */
   virtual double correlation(const cd::vector& params, const double& x, const double& y) = 0;
-=======
-    /**
-     * \brief convert the isotropic variogram in the equivalent anisotropic one calculating the norm of the spatial lag
-     * rotated and expanded according to the eigenvalues and eigenvector of the anisotropy matrix
-     */
-    double compute_anisotropic_h(
-        const double& lambda1, const double& lambda2, const double& phi, const double& x, const double& y);
-
-public:
-    VariogramFunction() = default;
-    /**
-     * \brief return f(params, x, y)
-     */
-    virtual double operator()(const cd::vector& params1, const cd::vector& params2, const double& x, const double& y);
-    /**
-     * \brief return non-stationary covariance between 2 locations given their spatial vector difference and
-     *  parameters in such locations
-     */
-    virtual double operator()(const cd::vector& params, const double& x, const double& y);
-    /**
-     * \brief return non-stationary correlation between 2 locations given their spatial vector difference and
-     *  parameters in such locations
-     */
-    virtual double correlation(const cd::vector& params1, const cd::vector& params2, const double& x, const double& y);
-    /**
-     * \brief return locally stationary correlation between 2 locations given their spatial vector difference and
-     *  parameters center of stationarity
-     */
-    virtual double correlation(const cd::vector& params, const double& x, const double& y) = 0;
->>>>>>> main
 }; // class VariogramFunction
 
 class Exponential : public VariogramFunction {
 public:
-<<<<<<< HEAD
   Exponential() = default;
   /**
    * \return sigma * sigma * (1 - exp(-h))
    * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
-=======
-    Exponential() = default;
-    /**
-     * \return sigma * sigma * (1 - exp(-h))
-     * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class Exponential
 
 class ExponentialNugget : public VariogramFunction {
 public:
-<<<<<<< HEAD
   ExponentialNugget() = default;
   /**
    * \return sigma * sigma * (1 - exp(-h))
@@ -99,20 +58,10 @@ public:
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
   double operator()(const cd::vector& params, const double& x, const double& y) override;
-=======
-    ExponentialNugget() = default;
-    /**
-     * \return sigma * sigma * (1 - exp(-h))
-     * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
-    double operator()(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class Exponential
 
 class Matern : public VariogramFunction {
 public:
-<<<<<<< HEAD
   Matern() = default;
   /**
    * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
@@ -120,20 +69,10 @@ public:
    * \param params a vector with lambda1, lambda2, phi, sigma and nu in this exact order
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
-=======
-    Matern() = default;
-    /**
-     * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
-     * std::sqrt(2*nu)*h)/(std::tgamma(nu)*std::pow(2,nu-1))) 
-     * \param params a vector with lambda1, lambda2, phi, sigma and nu in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class Matern
 
 class MaternNuFixed : public VariogramFunction {
 private:
-<<<<<<< HEAD
   double m_nu = 0.5; ///< constant value of nu
 public:
   MaternNuFixed(const double& nu)
@@ -144,62 +83,31 @@ public:
    * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
-=======
-    double m_nu = 0.5; ///< constant value of nu
-public:
-    MaternNuFixed(const double& nu)
-        : m_nu(nu) {};
-    /**
-     * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
-     * std::sqrt(2*nu)*h)/(std::tgamma(nu)*std::pow(2,nu-1))) 
-     * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class MaternNuFixed
 
 class Gaussian : public VariogramFunction {
 public:
-<<<<<<< HEAD
   Gaussian() = default;
   /**
    * \return sigma * sigma * (1 - exp(-h*h))
    * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
-=======
-    Gaussian() = default;
-    /**
-     * \return sigma * sigma * (1 - exp(-h*h))
-     * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class Gaussian
 
 class Nugget : public VariogramFunction {
 public:
-<<<<<<< HEAD
   Nugget() = default;
   /**
    * \return 1 if h = 0, 0 otherwise
    * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
-=======
-    Nugget() = default;
-    /**
-     * \return 1 if h = 0, 0 otherwise
-     * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class Nugget
 
 
 class MaternNuNugget : public VariogramFunction {
 private:
-<<<<<<< HEAD
   double m_nu = 0.5; ///< constant value of nu
 public:
   MaternNuNugget(const double& nu)
@@ -211,19 +119,6 @@ public:
    */
   double correlation(const cd::vector& params, const double& x, const double& y) override;
   double operator()(const cd::vector& params, const double& x, const double& y) override;
-=======
-    double m_nu = 0.5; ///< constant value of nu
-public:
-    MaternNuNugget(const double& nu)
-        : m_nu(nu) {};
-    /**
-     * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
-     * std::sqrt(2*nu)*h)/(std::tgamma(nu)*std::pow(2,nu-1))) 
-     * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-     */
-    double correlation(const cd::vector& params, const double& x, const double& y) override;
-    double operator()(const cd::vector& params, const double& x, const double& y) override;
->>>>>>> main
 }; // class MaternNuFixed
 
 /**
@@ -233,8 +128,4 @@ public:
 std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id);
 } // namespace LocallyStationaryModels
 
-<<<<<<< HEAD
 #endif // LOCALLY_STATIONARY_MODES_VARIOGRAM_FUNCTIONS
-=======
-#endif // LOCALLY_STATIONARY_MODES_VARIOGRAM_FUNCTIONS
->>>>>>> main
