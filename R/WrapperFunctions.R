@@ -59,6 +59,19 @@ findsolutions.lsm<-function(vario, id, initial.position, lower.bound = rep(1e-8,
       i=i+1
     }
   }
+  if (remove_not_convergent && !is.null(result$solutions) && nrow(result$solutions) > 0)
+  {
+    # Use a safe, vectorized approach to find non-convergent solutions
+    distances <- apply(result$solutions, 1, function(row) norm(as.matrix(row - initial.position), "2"))
+    non_convergent_indices <- which(distances < 1e-12)
+    
+    # If any non-convergent solutions were found, remove them
+    if (length(non_convergent_indices) > 0) {
+      cat(paste("Removing", length(non_convergent_indices), "non-convergent solutions.\n"))
+      result$solutions <- result$solutions[-non_convergent_indices, , drop = FALSE]
+      result$anchorpoints <- result$anchorpoints[-non_convergent_indices, , drop = FALSE]
+    }
+  }
   result$id <- id
   result$kernel_id <- vario$kernel_id
   result$initial_coordinates <- vario$initial_coordinates

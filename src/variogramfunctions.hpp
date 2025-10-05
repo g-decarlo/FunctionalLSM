@@ -5,127 +5,123 @@
 #define LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
 
 #include "traits.hpp"
+#include <Rcpp.h>
+#include <string>
+#include <memory>
+#include <algorithm>
 
 namespace LocallyStationaryModels {
 class VariogramFunction {
 protected:
-  /**
-   * \brief convert the isotropic variogram in the equivalent anisotropic one calculating the norm of the spatial lag
-   * rotated and expanded according to the eigenvalues and eigenvector of the anisotropy matrix
-   */
   double compute_anisotropic_h(
       const double& lambda1, const double& lambda2, const double& phi, const double& x, const double& y);
   
 public:
   VariogramFunction() = default;
-  /**
-   * \brief return f(params, x, y)
-   */
+  virtual ~VariogramFunction() = default;
+  
   virtual double operator()(const cd::vector& params1, const cd::vector& params2, const double& x, const double& y);
-  /**
-   * \brief return non-stationary covariance between 2 locations given their spatial vector difference and
-   * parameters in such locations
-   */
   virtual double operator()(const cd::vector& params, const double& x, const double& y);
-  /**
-   * \brief return non-stationary correlation between 2 locations given their spatial vector difference and
-   * parameters in such locations
-   */
   virtual double correlation(const cd::vector& params1, const cd::vector& params2, const double& x, const double& y);
-  /**
-   * \brief return locally stationary correlation between 2 locations given their spatial vector difference and
-   * parameters center of stationarity
-   */
   virtual double correlation(const cd::vector& params, const double& x, const double& y) = 0;
-}; // class VariogramFunction
+};
 
 class Exponential : public VariogramFunction {
 public:
-  Exponential() = default;
-  /**
-   * \return sigma * sigma * (1 - exp(-h))
-   * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-}; // class Exponential
-
+  Exponential() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
+};
 class ExponentialNugget : public VariogramFunction {
 public:
-  ExponentialNugget() = default;
-  /**
-   * \return sigma * sigma * (1 - exp(-h))
-   * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-  double operator()(const cd::vector& params, const double& x, const double& y) override;
-}; // class Exponential
-
+  ExponentialNugget() = default; double correlation(const cd::vector& params, const double& x, const double& y) override; double operator()(const cd::vector& params, const double& x, const double& y) override;
+};
 class Matern : public VariogramFunction {
 public:
-  Matern() = default;
-  /**
-   * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
-   * std::sqrt(2*nu)*h)/(std::tgamma(nu)*std::pow(2,nu-1)))
-   * \param params a vector with lambda1, lambda2, phi, sigma and nu in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-}; // class Matern
-
+  Matern() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
+};
 class MaternNuFixed : public VariogramFunction {
 private:
-  double m_nu = 0.5; ///< constant value of nu
+  double m_nu = 0.5;
 public:
-  MaternNuFixed(const double& nu)
-    : m_nu(nu) {};
-  /**
-   * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
-   * std::sqrt(2*nu)*h)/(std::tgamma(nu)*std::pow(2,nu-1)))
-   * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-}; // class MaternNuFixed
-
+  MaternNuFixed(const double& nu) : m_nu(nu) {}; double correlation(const cd::vector& params, const double& x, const double& y) override;
+};
 class Gaussian : public VariogramFunction {
 public:
-  Gaussian() = default;
-  /**
-   * \return sigma * sigma * (1 - exp(-h*h))
-   * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-}; // class Gaussian
-
+  Gaussian() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
+};
 class Nugget : public VariogramFunction {
 public:
-  Nugget() = default;
-  /**
-   * \return 1 if h = 0, 0 otherwise
-   * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-}; // class Nugget
-
-
+  Nugget() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
+};
 class MaternNuNugget : public VariogramFunction {
 private:
-  double m_nu = 0.5; ///< constant value of nu
+  double m_nu = 0.5;
 public:
-  MaternNuNugget(const double& nu)
-    : m_nu(nu) {};
-  /**
-   * \return sigma * sigma *(1 - std::pow(std::sqrt(2*nu)*h, nu)*std::cyl_bessel_k(nu,
-   * std::sqrt(2*nu)*h)/(std::tgamma(nu)*std::pow(2,nu-1)))
-   * \param params a vector with lambda1, lambda2, phi and sigma in this exact order
-   */
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-  double operator()(const cd::vector& params, const double& x, const double& y) override;
-}; // class MaternNuFixed
+  MaternNuNugget(const double& nu) : m_nu(nu) {}; double correlation(const cd::vector& params, const double& x, const double& y) override; double operator()(const cd::vector& params, const double& x, const double& y) override;
+};
 
-/**
- * \brief allow to select between different functions for the variogram
- * \param id the name of chosen variogram
- */
-std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id);
+
+inline std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id) {
+  std::string lower_id = id;
+  std::transform(lower_id.begin(), lower_id.end(), lower_id.begin(), ::tolower);
+  
+  if (lower_id == "exponential" || lower_id == "esponenziale" || lower_id == "exp") {
+    return std::make_shared<Exponential>();
+  }
+  if (lower_id == "matern") {
+    return std::make_shared<Matern>();
+  }
+  if (lower_id == "gaussian") {
+    return std::make_shared<Gaussian>();
+  }
+  if (lower_id == "nugget") {
+    return std::make_shared<Nugget>();
+  }
+  if (lower_id == "exponentialnugget") {
+    return std::make_shared<ExponentialNugget>();
+  }
+  
+  std::string base_nugget_long = "maternununugget";
+  std::string base_nugget_short = "maternunugget";
+  std::string base_fixed_long = "maternunufixed";
+  std::string base_fixed_short = "maternufixed";
+  
+  if (lower_id.rfind(base_nugget_long, 0) == 0 || lower_id.rfind(base_nugget_short, 0) == 0) {
+    try {
+      std::string nu_str;
+      if (lower_id.rfind(base_nugget_long, 0) == 0) {
+        nu_str = lower_id.substr(base_nugget_long.length());
+      } else {
+        nu_str = lower_id.substr(base_nugget_short.length());
+      }
+      nu_str.erase(0, nu_str.find_first_of("0123456789."));
+      double NU = std::stod(nu_str);
+      return std::make_shared<MaternNuNugget>(NU);
+    } catch (const std::exception& e) {
+      Rcpp::stop("Failed to parse nu value from '" + id + "'.");
+    }
+  }
+  
+  if (lower_id.rfind(base_fixed_long, 0) == 0 || lower_id.rfind(base_fixed_short, 0) == 0) {
+    try {
+      std::string nu_str;
+      if (lower_id.rfind(base_fixed_long, 0) == 0) {
+        nu_str = lower_id.substr(base_fixed_long.length());
+      } else {
+        nu_str = lower_id.substr(base_fixed_short.length());
+      }
+      nu_str.erase(0, nu_str.find_first_of("0123456789."));
+      double NU = std::stod(nu_str);
+      return std::make_shared<MaternNuFixed>(NU);
+    } catch (const std::exception& e) {
+      Rcpp::stop("Failed to parse nu value from '" + id + "'.");
+    }
+  }
+  
+  Rcpp::stop("Invalid variogram model id: '" + id + "'");
+  return nullptr;
+}
+
 } // namespace LocallyStationaryModels
 
-#endif // LOCALLY_STATIONARY_MODES_VARIOGRAM_FUNCTIONS
+#endif // LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
+
