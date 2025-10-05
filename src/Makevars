@@ -4,4 +4,8 @@ PKG_LIBS = -fopenmp -lgomp
 
 ## With R 3.1.0 or later, you can uncomment the following line to tell R to 
 ## enable compilation with C++11 (or even C++14) where available
+<<<<<<< HEAD
 CXX_STD = CXX17
+=======
+CXX_STD = CXX17
+>>>>>>> main
