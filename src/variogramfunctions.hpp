@@ -5,8 +5,10 @@
 #define LOCALLY_STATIONARY_MODES_VARIOGRAMFUNCTIONS
 
 #include "traits.hpp"
+#include <Rcpp.h>
 #include <string>
 #include <memory>
+#include <algorithm>
 
 namespace LocallyStationaryModels {
 class VariogramFunction {
@@ -16,66 +18,108 @@ protected:
   
 public:
   VariogramFunction() = default;
-  virtual ~VariogramFunction() = default; // Virtual destructor for base class
+  virtual ~VariogramFunction() = default;
   
-  // Base virtual functions that will be overridden by derived classes
   virtual double operator()(const cd::vector& params1, const cd::vector& params2, const double& x, const double& y);
   virtual double operator()(const cd::vector& params, const double& x, const double& y);
   virtual double correlation(const cd::vector& params1, const cd::vector& params2, const double& x, const double& y);
-  virtual double correlation(const cd::vector& params, const double& x, const double& y) = 0; // Pure virtual, must be implemented
+  virtual double correlation(const cd::vector& params, const double& x, const double& y) = 0;
 };
 
 class Exponential : public VariogramFunction {
 public:
-  Exponential() = default;
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
+  Exponential() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
 };
-
 class ExponentialNugget : public VariogramFunction {
 public:
-  ExponentialNugget() = default;
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-  double operator()(const cd::vector& params, const double& x, const double& y) override;
+  ExponentialNugget() = default; double correlation(const cd::vector& params, const double& x, const double& y) override; double operator()(const cd::vector& params, const double& x, const double& y) override;
 };
-
 class Matern : public VariogramFunction {
 public:
-  Matern() = default;
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
+  Matern() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
 };
-
 class MaternNuFixed : public VariogramFunction {
 private:
   double m_nu = 0.5;
 public:
-  MaternNuFixed(const double& nu) : m_nu(nu) {};
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
+  MaternNuFixed(const double& nu) : m_nu(nu) {}; double correlation(const cd::vector& params, const double& x, const double& y) override;
 };
-
 class Gaussian : public VariogramFunction {
 public:
-  Gaussian() = default;
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
+  Gaussian() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
 };
-
 class Nugget : public VariogramFunction {
 public:
-  Nugget() = default;
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
+  Nugget() = default; double correlation(const cd::vector& params, const double& x, const double& y) override;
 };
-
 class MaternNuNugget : public VariogramFunction {
 private:
   double m_nu = 0.5;
 public:
-  MaternNuNugget(const double& nu) : m_nu(nu) {};
-  double correlation(const cd::vector& params, const double& x, const double& y) override;
-  // This declaration was missing, causing the bug. Now it's correctly declared.
-  double operator()(const cd::vector& params, const double& x, const double& y) override;
+  MaternNuNugget(const double& nu) : m_nu(nu) {}; double correlation(const cd::vector& params, const double& x, const double& y) override; double operator()(const cd::vector& params, const double& x, const double& y) override;
 };
 
-// Factory function to create the correct model object
-std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id);
+
+inline std::shared_ptr<VariogramFunction> make_variogramiso(const std::string& id) {
+  std::string lower_id = id;
+  std::transform(lower_id.begin(), lower_id.end(), lower_id.begin(), ::tolower);
+  
+  if (lower_id == "exponential" || lower_id == "esponenziale" || lower_id == "exp") {
+    return std::make_shared<Exponential>();
+  }
+  if (lower_id == "matern") {
+    return std::make_shared<Matern>();
+  }
+  if (lower_id == "gaussian") {
+    return std::make_shared<Gaussian>();
+  }
+  if (lower_id == "nugget") {
+    return std::make_shared<Nugget>();
+  }
+  if (lower_id == "exponentialnugget") {
+    return std::make_shared<ExponentialNugget>();
+  }
+  
+  std::string base_nugget_long = "maternununugget";
+  std::string base_nugget_short = "maternunugget";
+  std::string base_fixed_long = "maternunufixed";
+  std::string base_fixed_short = "maternufixed";
+  
+  if (lower_id.rfind(base_nugget_long, 0) == 0 || lower_id.rfind(base_nugget_short, 0) == 0) {
+    try {
+      std::string nu_str;
+      if (lower_id.rfind(base_nugget_long, 0) == 0) {
+        nu_str = lower_id.substr(base_nugget_long.length());
+      } else {
+        nu_str = lower_id.substr(base_nugget_short.length());
+      }
+      nu_str.erase(0, nu_str.find_first_of("0123456789."));
+      double NU = std::stod(nu_str);
+      return std::make_shared<MaternNuNugget>(NU);
+    } catch (const std::exception& e) {
+      Rcpp::stop("Failed to parse nu value from '" + id + "'.");
+    }
+  }
+  
+  if (lower_id.rfind(base_fixed_long, 0) == 0 || lower_id.rfind(base_fixed_short, 0) == 0) {
+    try {
+      std::string nu_str;
+      if (lower_id.rfind(base_fixed_long, 0) == 0) {
+        nu_str = lower_id.substr(base_fixed_long.length());
+      } else {
+        nu_str = lower_id.substr(base_fixed_short.length());
+      }
+      nu_str.erase(0, nu_str.find_first_of("0123456789."));
+      double NU = std::stod(nu_str);
+      return std::make_shared<MaternNuFixed>(NU);
+    } catch (const std::exception& e) {
+      Rcpp::stop("Failed to parse nu value from '" + id + "'.");
+    }
+  }
+  
+  Rcpp::stop("Invalid variogram model id: '" + id + "'");
+  return nullptr;
+}
 
 } // namespace LocallyStationaryModels
 

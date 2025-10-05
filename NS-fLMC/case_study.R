@@ -1,7 +1,7 @@
 # 1. Setup ----
 # Install and load necessary packages
 library(devtools)
-#install_github("g-decarlo/FunctionalLSM")
+install_github("g-decarlo/FunctionalLSM", ref="gdecarlo/fix-matern")
 library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(
@@ -98,12 +98,12 @@ solu_trace <- findsolutions.lsm(
   vario_trace,
   remove_not_convergent = TRUE,
   lower.delta = 0.5,
-  upper.bound = c(10, 10, pi / 2, 8, 200),
-  lower.bound = c(1e-8, 1e-8, 0, 1e-8, 1e-8),
-  initial.position = c(2, 2, pi / 12, 6, 100),
-  id = "MaternNuFixed 2.5 Nugget"
+  upper.bound = c(25, 25, pi / 2, 20, 200),
+  lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+  initial.position = c(10, 10, pi / 3, 10, 50),
+  id = "exponentialnugget",
 )
-
+solu_trace$solutions
 
 # 4. Non-Stationary Model Fitting for Rain Probability ----
 # Compute the empirical variogram for the CLR-transformed rain probability
