@@ -224,7 +224,7 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
   weights_Trace <- inv_C_trace_train %*% C_trace_traintest
   
   
-  # 3. Main Repetition Loop (now faster)
+  # 3. Main Repetition Loop
   results_list <- lapply(1:M_repetitions, function(m) {
     start_col <- (m - 1) * p + 1; end_col <- m * p
     sim_data <- all_sim_residuals[, start_col:end_col] + all_params$true_means
