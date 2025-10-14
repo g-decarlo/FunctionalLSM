@@ -21,7 +21,7 @@ smoothing <- function(solutions, anchorpoints, delta, positions, kernel_id, n_th
     .Call('_LocallyStationaryModels_smoothing', PACKAGE = 'LocallyStationaryModels', solutions, anchorpoints, delta, positions, kernel_id, n_threads)
 }
 
-samplelsm <- function(d, variogram_id, parameters, dim, n_samples) {
+samplelsm <- function(d, variogram_id, parameters, dim, n_samples, seed) {
     .Call('_LocallyStationaryModels_samplelsm', PACKAGE = 'LocallyStationaryModels', d, variogram_id, parameters, dim, n_samples, seed)
 }
 

@@ -15,7 +15,7 @@
 
 # --- SECTION 1: SCRIPT SETUP ---
 library(devtools)
-install_github("g-decarlo/FunctionalLSM", head = "gdecarlo/simulation-study")
+install_github("g-decarlo/FunctionalLSM", ref="gdecarlo/simulation-plots")
 library(LocallyStationaryModels)
 
 # Install missing packages if necessary
@@ -149,16 +149,15 @@ compute_R_NS <- function(si, sj, params_i, params_j) {
 #' @param p Number of variables (dimensionality of the process).
 #' @param nugget The nugget variance.
 #' @return A data frame with performance metrics for each repetition.
-run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, nugget = 1e-4) {
-  
+run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, nugget = 1e-4, fixed_seed = 0) {
   # 1. Generate Parameters and Underlying Spatial Process
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
   all_params <- generate_scenario_parameters(grid_points, scenario)
   
   # Generate the smooth part of the spatial process (M_repetitions)
-  sim_result_smooth <- LocallyStationaryModels:::samplelsm(
+  sim_result_smooth <- sample.lsm(
     d = grid_points, variogram_id = "exponential",
-    parameters = all_params$params_for_sampling, dim = p, n_samples = M_repetitions, seed = seed
+    parameters = all_params$params_for_sampling, dim = p, n_samples = M_repetitions, seed = fixed_seed
   )$simulated_processes
   
   # Add nugget effect to create the final observed data for all repetitions
@@ -336,9 +335,7 @@ create_and_save_setup_plots <- function() {
 #' @param p The dimensionality of the process (number of basis functions).
 #' @param nugget The nugget variance.
 create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4) {
-  seed = 0
-  set.seed(seed) # For reproducible selection of locations and realization
-  
+
   scenario_name <- "non-proportional"
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
   
@@ -349,9 +346,9 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
   
   # Generate one realization of the spatial coefficients
   all_params <- generate_scenario_parameters(grid_points, scenario = scenario_name)
-  sim_result_smooth <- LocallyStationaryModels:::samplelsm(
+  sim_result_smooth <- sample.lsm(
     d = grid_points, variogram_id = "exponential",
-    parameters = all_params$params_for_sampling, dim = p, n_samples = 1, seed = seed
+    parameters = all_params$params_for_sampling, dim = p, n_samples = 1
   )$simulated_processes
   nugget_noise <- matrix(rnorm(nrow(grid_points) * p, mean = 0, sd = sqrt(nugget)),
                          nrow = nrow(grid_points), ncol = p)
@@ -401,7 +398,8 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
 
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
-set.seed(0) # for reproducibility
+set_seed = 0
+set.seed(set_seed) # for reproducibility
 M_rep <- 350      # Number of repetitions for stable estimates
 N_values <- c(20, 50, 100, 120, 150, 200, 500) # Training sizes
 
@@ -440,7 +438,8 @@ with_progress({
     results_for_setting <- run_simulation(
       scenario = setting$scenario,
       M_repetitions = M_rep,
-      N_train = setting$n_train
+      N_train = setting$n_train,
+      fixed_seed = set_seed
     )
     
     results_for_setting$Scenario <- setting$scenario
