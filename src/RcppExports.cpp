@@ -119,6 +119,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const ::Eigen::MatrixXd& >::type parameters(parametersSEXP);
     Rcpp::traits::input_parameter< const unsigned& >::type dim(dimSEXP);
     Rcpp::traits::input_parameter< const unsigned& >::type n_samples(n_samplesSEXP);
+    Rcpp::traits::input_parameter< const unsigned& >::type seed(seedSEXP);
     rcpp_result_gen = Rcpp::wrap(samplelsm(d, variogram_id, parameters, dim, n_samples, seed));
     return rcpp_result_gen;
 END_RCPP

@@ -14,6 +14,9 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # --- SECTION 1: SCRIPT SETUP ---
+library(devtools)
+install_github("g-decarlo/FunctionalLSM", head = "gdecarlo/simulation-study")
+library(LocallyStationaryModels)
 
 # Install missing packages if necessary
 packages <- c("dplyr", "ggplot2", "tidyr", "Matrix",
@@ -155,7 +158,7 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
   # Generate the smooth part of the spatial process (M_repetitions)
   sim_result_smooth <- LocallyStationaryModels:::samplelsm(
     d = grid_points, variogram_id = "exponential",
-    parameters = all_params$params_for_sampling, dim = p, n_samples = M_repetitions
+    parameters = all_params$params_for_sampling, dim = p, n_samples = M_repetitions, seed = seed
   )$simulated_processes
   
   # Add nugget effect to create the final observed data for all repetitions
@@ -333,7 +336,8 @@ create_and_save_setup_plots <- function() {
 #' @param p The dimensionality of the process (number of basis functions).
 #' @param nugget The nugget variance.
 create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4) {
-  set.seed(2) # For reproducible selection of locations and realization
+  seed = 0
+  set.seed(seed) # For reproducible selection of locations and realization
   
   scenario_name <- "non-proportional"
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
@@ -347,7 +351,7 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
   all_params <- generate_scenario_parameters(grid_points, scenario = scenario_name)
   sim_result_smooth <- LocallyStationaryModels:::samplelsm(
     d = grid_points, variogram_id = "exponential",
-    parameters = all_params$params_for_sampling, dim = p, n_samples = 1
+    parameters = all_params$params_for_sampling, dim = p, n_samples = 1, seed = seed
   )$simulated_processes
   nugget_noise <- matrix(rnorm(nrow(grid_points) * p, mean = 0, sd = sqrt(nugget)),
                          nrow = nrow(grid_points), ncol = p)
@@ -394,11 +398,6 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
   ggsave("functional_realizations_overlapped_plot.png", plot = p_funcs, width = 9, height = 7, dpi = 300)
   cat("--- Functional realizations overlapped plot saved to functional_realizations_overlapped_plot.png ---\n")
 }
-
-
-# Generate and save the setup plots before running the main simulation
-create_and_save_setup_plots()
-create_functional_realization_plots()
 
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
@@ -542,4 +541,11 @@ ggsave("mspe_significance_plot.png", plot = significance_plot, width = 14, heigh
 
 cat("\n--- PLOT SAVED to mspe_significance_plot.png ---\n")
 print(significance_plot)
+
+
+# Generate and save the setup plots before running the main simulation
+create_and_save_setup_plots()
+create_functional_realization_plots()
+
+
 
