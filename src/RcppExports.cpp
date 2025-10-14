@@ -109,8 +109,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // samplelsm
-Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& variogram_id, const ::Eigen::MatrixXd& parameters, const unsigned& dim, const unsigned& n_samples);
-RcppExport SEXP _LocallyStationaryModels_samplelsm(SEXP dSEXP, SEXP variogram_idSEXP, SEXP parametersSEXP, SEXP dimSEXP, SEXP n_samplesSEXP) {
+Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& variogram_id, const ::Eigen::MatrixXd& parameters, const unsigned& dim, const unsigned& n_samples, const unsigned& seed);
+RcppExport SEXP _LocallyStationaryModels_samplelsm(SEXP dSEXP, SEXP variogram_idSEXP, SEXP parametersSEXP, SEXP dimSEXP, SEXP n_samplesSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -119,7 +119,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const ::Eigen::MatrixXd& >::type parameters(parametersSEXP);
     Rcpp::traits::input_parameter< const unsigned& >::type dim(dimSEXP);
     Rcpp::traits::input_parameter< const unsigned& >::type n_samples(n_samplesSEXP);
-    rcpp_result_gen = Rcpp::wrap(samplelsm(d, variogram_id, parameters, dim, n_samples));
+    rcpp_result_gen = Rcpp::wrap(samplelsm(d, variogram_id, parameters, dim, n_samples, seed));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -130,7 +130,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_LocallyStationaryModels_findsolutionslsm", (DL_FUNC) &_LocallyStationaryModels_findsolutionslsm, 16},
     {"_LocallyStationaryModels_predikt", (DL_FUNC) &_LocallyStationaryModels_predikt, 13},
     {"_LocallyStationaryModels_smoothing", (DL_FUNC) &_LocallyStationaryModels_smoothing, 6},
-    {"_LocallyStationaryModels_samplelsm", (DL_FUNC) &_LocallyStationaryModels_samplelsm, 5},
+    {"_LocallyStationaryModels_samplelsm", (DL_FUNC) &_LocallyStationaryModels_samplelsm, 6},
     {NULL, NULL, 0}
 };
 
