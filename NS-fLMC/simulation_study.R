@@ -334,7 +334,7 @@ create_and_save_setup_plots <- function() {
 #' @param n_curves_to_plot Number of sample curves to display.
 #' @param p The dimensionality of the process (number of basis functions).
 #' @param nugget The nugget variance.
-create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4) {
+create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4, fixed_seed) {
 
   scenario_name <- "non-proportional"
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
@@ -348,7 +348,7 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
   all_params <- generate_scenario_parameters(grid_points, scenario = scenario_name)
   sim_result_smooth <- sample.lsm(
     d = grid_points, variogram_id = "exponential",
-    parameters = all_params$params_for_sampling, dim = p, n_samples = 1
+    parameters = all_params$params_for_sampling, dim = p, n_samples = 1, seed = fixed_seed
   )$simulated_processes
   nugget_noise <- matrix(rnorm(nrow(grid_points) * p, mean = 0, sd = sqrt(nugget)),
                          nrow = nrow(grid_points), ncol = p)
@@ -398,7 +398,7 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
 
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
-set_seed = 0
+set_seed = 42
 set.seed(set_seed) # for reproducibility
 M_rep <- 350      # Number of repetitions for stable estimates
 N_values <- c(20, 50, 100, 120, 150, 200, 500) # Training sizes
@@ -544,7 +544,7 @@ print(significance_plot)
 
 # Generate and save the setup plots before running the main simulation
 create_and_save_setup_plots()
-create_functional_realization_plots()
+create_functional_realization_plots(seed = fixed_seed)
 
 
 
