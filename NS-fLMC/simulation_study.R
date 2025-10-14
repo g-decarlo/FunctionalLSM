@@ -1,9 +1,9 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# SCRIPT: Simulation for Trace-NS vs Op-NS Models
+# Simulation for Trace-NS vs Op-NS Models
 #
 # DESCRIPTION:
-# This script conducts a comprehensive oracle simulation study to compare the
+# This script conducts a comprehensive simulation study to compare the
 # predictive performance of two multivariate non-stationary kriging models:
 # 1. Op-NS Cokriging: Utilizes the full operator-based cross-covariance model.
 # 2. Trace-NS Kriging: Employs a simplified model based on the trace-covariogram.
@@ -63,7 +63,7 @@ generate_scenario_parameters <- function(coords,
   
   # --- Scenario-Specific Structural Matrix K(s) ---
   if (scenario == "non-proportional") {
-    # Fully non-proportional case: K(s) varies at every point
+    # Original unbalanced parameterization
     K11 <- 2 - x;  K12 <- 0
     K21 <- -2;     K22 <- 2 + y
   } else {
@@ -77,7 +77,7 @@ generate_scenario_parameters <- function(coords,
     )
     x_fixed <- fixed_coords[1]; y_fixed <- fixed_coords[2]
     
-    # Calculate the fixed structural matrix K
+    # Calculate the fixed structural matrix K based on the original formula
     K_fixed <- matrix(c(2 - x_fixed, -2, 0, 2 + y_fixed), nrow = 2)
     
     # Replicate this fixed matrix for all locations
@@ -136,7 +136,7 @@ compute_R_NS <- function(si, sj, params_i, params_j) {
 
 # --- SECTION 3: SIMULATION ENGINE ---
 
-#' Run a Single Oracle Simulation Setting
+#' Run a Single Simulation Setting
 #'
 #' Executes M_repetitions for a given scenario and training size.
 #'
@@ -146,7 +146,7 @@ compute_R_NS <- function(si, sj, params_i, params_j) {
 #' @param p Number of variables (dimensionality of the process).
 #' @param nugget The nugget variance.
 #' @return A data frame with performance metrics for each repetition.
-run_oracle_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, nugget = 1e-4) {
+run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, nugget = 1e-4) {
   
   # 1. Generate Parameters and Underlying Spatial Process
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
@@ -250,7 +250,6 @@ run_oracle_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p
 #'
 #' This function generates two separate plots: one for the K(s) matrix components
 #' and one for the scalar intensity field r(s).
-#'
 create_and_save_setup_plots <- function() {
   # Create a dense grid for smooth plotting
   grid_dense <- as.matrix(expand.grid(x = seq(-1, 1, length.out=100),
@@ -281,15 +280,15 @@ create_and_save_setup_plots <- function() {
     geom_raster() +
     facet_wrap(~component, nrow=1, labeller = label_parsed) +
     geom_point(data = proportional_points, aes(x, y), inherit.aes = FALSE,
-               color = "white", size = 4, shape = 18) +
+               color = "#E69F00", size = 4, shape = 18) +
     geom_text_repel(data = proportional_points, aes(x, y, label = label), inherit.aes = FALSE,
-                    color = "white", size = 3, fontface = "bold",
+                    color = "#E69F00", size = 3, fontface = "bold",
                     box.padding = 0.5, point.padding = 0.5,
-                    segment.color = 'white', segment.size = 0.5) +
+                    segment.color = '#E69F00', segment.size = 0.5) +
     scale_fill_viridis_c() +
     coord_fixed() +
     labs(title="Components of Structural Matrix K(s) in Non-Proportional Scenario",
-         subtitle="White diamonds mark the locations used to define the fixed K for the Proportional scenarios.",
+         subtitle="Orange diamonds mark the locations used to define the fixed K for the Proportional scenarios.",
          x="Coordinate x", y="Coordinate y", fill="Value") +
     theme_bw(base_size = 12) +
     theme(plot.title = element_text(size=14, face="bold"),
@@ -323,13 +322,88 @@ create_and_save_setup_plots <- function() {
   cat("--- Simulation setup plots saved to K_structure_plot.png and r_intensity_plot.png ---\n")
 }
 
+# --- SECTION 4B: FUNCTIONAL REALIZATION PLOTS (NEW CODE) ---
+
+#' Create and save publication-quality plots of functional realizations.
+#'
+#' This function generates realizations from the non-proportional scenario,
+#' reconstructs the corresponding functions, and plots them overlapped.
+#'
+#' @param n_curves_to_plot Number of sample curves to display.
+#' @param p The dimensionality of the process (number of basis functions).
+#' @param nugget The nugget variance.
+create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4) {
+  set.seed(2) # For reproducible selection of locations and realization
+  
+  scenario_name <- "non-proportional"
+  grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
+  
+  # Basis functions defined on a fine grid
+  t_grid <- seq(-pi, pi, length.out = 201)
+  e1_t <- (1/sqrt(pi)) * cos(t_grid)
+  e2_t <- (1/sqrt(pi)) * sin(t_grid)
+  
+  # Generate one realization of the spatial coefficients
+  all_params <- generate_scenario_parameters(grid_points, scenario = scenario_name)
+  sim_result_smooth <- LocallyStationaryModels:::samplelsm(
+    d = grid_points, variogram_id = "exponential",
+    parameters = all_params$params_for_sampling, dim = p, n_samples = 1
+  )$simulated_processes
+  nugget_noise <- matrix(rnorm(nrow(grid_points) * p, mean = 0, sd = sqrt(nugget)),
+                         nrow = nrow(grid_points), ncol = p)
+  sim_coeffs <- sim_result_smooth + nugget_noise + all_params$true_means
+  
+  # Select random locations and reconstruct curves
+  sample_indices <- sample(1:nrow(grid_points), n_curves_to_plot)
+  sampled_coeffs <- sim_coeffs[sample_indices, ]
+  
+  curves_data <- lapply(1:n_curves_to_plot, function(j) {
+    x_t <- sampled_coeffs[j, 1] * e1_t + sampled_coeffs[j, 2] * e2_t
+    data.frame(
+      t = t_grid,
+      value = x_t,
+      curve_id = factor(j) # Unique ID for each curve
+    )
+  })
+  
+  plot_df <- do.call(rbind, curves_data)
+  
+  # Create the single, overlapped plot
+  p_funcs <- ggplot(plot_df, aes(x = t, y = value, group = curve_id)) +
+    geom_line(linewidth = 0.7, color = "navy", alpha = 0.6) +
+    labs(
+      title = "Functional Realizations from the Non-Proportional Scenario",
+      subtitle = paste(n_curves_to_plot, "sample curves from different spatial locations shown overlapped."),
+      x = expression(italic(t)),
+      y = expression(italic(X[s](t)))
+    ) +
+    scale_x_continuous(
+      breaks = c(-pi, -pi/2, 0, pi/2, pi),
+      labels = c(expression(-pi), expression(-pi/2), "0", expression(pi/2), expression(pi))
+    ) +
+    theme_bw(base_size = 14) +
+    theme(
+      plot.title = element_text(face = "bold", size = 16),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(face = "bold"),
+      panel.grid.major = element_line(linetype = "dashed", color = "grey85"),
+      panel.grid.minor = element_blank()
+    )
+  
+  # Save the plot
+  ggsave("functional_realizations_overlapped_plot.png", plot = p_funcs, width = 9, height = 7, dpi = 300)
+  cat("--- Functional realizations overlapped plot saved to functional_realizations_overlapped_plot.png ---\n")
+}
+
+
 # Generate and save the setup plots before running the main simulation
 create_and_save_setup_plots()
+create_functional_realization_plots()
 
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
 set.seed(0) # for reproducibility
-M_rep <- 350       # Number of repetitions for stable estimates
+M_rep <- 350      # Number of repetitions for stable estimates
 N_values <- c(20, 50, 100, 120, 150, 200, 500) # Training sizes
 
 scenarios_to_run <- c(
@@ -356,7 +430,7 @@ handlers(global = TRUE)
 handlers("progress")
 
 # Run the simulation experiment
-cat("--- STARTING ORACLE SIMULATION ---\n")
+cat("--- STARTING SIMULATION ---\n")
 with_progress({
   p_progress <- progressor(steps = nrow(experiment_grid))
   
@@ -364,7 +438,7 @@ with_progress({
     setting <- experiment_grid[i, ]
     p_progress(sprintf("Scenario=%s, N_train=%g", setting$scenario, setting$n_train))
     
-    results_for_setting <- run_oracle_simulation(
+    results_for_setting <- run_simulation(
       scenario = setting$scenario,
       M_repetitions = M_rep,
       N_train = setting$n_train
@@ -445,7 +519,7 @@ significance_plot <- ggplot(plot_data_final, aes(x = N_train, y = Value)) +
   facet_grid(Metric ~ Scenario_Label, scales = "free_y", switch = "y") +
   scale_x_continuous(breaks = c(100, 300, 500)) +
   labs(
-    title = "Oracle Kriging Performance: MSPE Difference and Statistical Significance",
+    title = "Kriging Performance with Known Parameters: MSPE Difference and Statistical Significance",
     subtitle = "Positive MSPE difference favors Op-NS model. Lower panel shows p-values for paired t-test.",
     x = "Number of Training Points (N_train)",
     y = NULL
