@@ -334,7 +334,7 @@ create_and_save_setup_plots <- function() {
 #' @param n_curves_to_plot Number of sample curves to display.
 #' @param p The dimensionality of the process (number of basis functions).
 #' @param nugget The nugget variance.
-create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4, fixed_seed) {
+create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4, fixed_seed = 0) {
 
   scenario_name <- "non-proportional"
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
@@ -398,10 +398,10 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
 
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
-set_seed = 42
+set_seed = 1000
 set.seed(set_seed) # for reproducibility
 M_rep <- 350      # Number of repetitions for stable estimates
-N_values <- c(20, 50, 100, 120, 150, 200, 500) # Training sizes
+N_values <- c(20, 50) # Training sizes
 
 scenarios_to_run <- c(
   "non-proportional",
@@ -544,7 +544,7 @@ print(significance_plot)
 
 # Generate and save the setup plots before running the main simulation
 create_and_save_setup_plots()
-create_functional_realization_plots(seed = fixed_seed)
+create_functional_realization_plots(fixed_seed = set_seed)
 
 
 
