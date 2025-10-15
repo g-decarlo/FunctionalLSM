@@ -484,9 +484,9 @@ summary_stats <- simulation_results_labeled %>%
     Mean_Diff_MSPE = mean(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE),
     SE_Diff_MSPE = sd(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE) / sqrt(n()),
     P_Value = tryCatch({
-      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > 2^(-23)
+      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > 2^(-22)
       # This tests if Op-NS is better than Trace-NS by more than the threshold.
-      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = 2^(-23))$p.value
+      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = 2^(-22))$p.value
     }, error = function(e) { NA_real_ }),
     .groups = 'drop'
   ) %>%
