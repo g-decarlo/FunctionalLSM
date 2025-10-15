@@ -401,7 +401,8 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
 set_seed = 1000
 set.seed(set_seed) # for reproducibility
 M_rep <- 350      # Number of repetitions for stable estimates
-N_values <- c(20, 50) # Training sizes
+N_values <- c(20, 50, 100, 150, 200, 300, 500) # Training sizes
+options(digits = 5)
 
 scenarios_to_run <- c(
   "non-proportional",
