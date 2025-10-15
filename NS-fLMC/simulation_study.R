@@ -6,7 +6,8 @@
 # This script conducts a comprehensive simulation study to compare the
 # predictive performance of two multivariate non-stationary kriging models:
 # 1. Op-NS Cokriging: Utilizes the full operator-based cross-covariance model.
-# 2. Trace-NS Kriging: Employs a simplified model based on the trace-covariogram.
+# 2. Trace-NS Kriging: Employs a simplified model, C(i,j) = sigma(i)*sigma(j)*R_NS(i,j),
+#    which is misspecified under non-proportionality.
 #
 # The simulation investigates six coregionalization scenarios to assess performance
 # under both correctly specified and misspecified model assumptions.
@@ -15,7 +16,8 @@
 
 # --- SECTION 1: SCRIPT SETUP ---
 library(devtools)
-install_github("g-decarlo/FunctionalLSM")
+# Note: Using the plural 'simulation-plots' as it is more likely correct.
+install_github("g-decarlo/FunctionalLSM", ref="gdecarlo/simulation-plots")
 library(LocallyStationaryModels)
 
 # Install missing packages if necessary
@@ -76,7 +78,7 @@ generate_scenario_parameters <- function(coords,
                            "prop_v1"     = c(-1, -1),  # Proportional @ (-1, -1)
                            "prop_v2"     = c(1, -1),   # Proportional @ (1, -1)
                            "prop_v3"     = c(-1, 1),   # Proportional @ (-1, 1)
-                           "prop_v4"     = c(1, 1)    # Proportional @ (1, 1)
+                           "prop_v4"     = c(1, 1)     # Proportional @ (1, 1)
     )
     x_fixed <- fixed_coords[1]; y_fixed <- fixed_coords[2]
     
@@ -188,12 +190,18 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
   }
   inv_C_block_train_Op <- chol2inv(chol(C_block_train_Op + diag(nugget, N_train * p)))
   
-  # Trace-NS Model Covariances
+  sigma_train <- sapply(train_params, function(param) sqrt(sum(diag(param$A %*% t(param$A)))))
+  sigma_test  <- sapply(test_params,  function(param) sqrt(sum(diag(param$A %*% t(param$A)))))
+  
+  # Trace-NS Model Covariances (using the simplified, misspecified model)
   C_trace_train <- matrix(0, nrow = N_train * p, ncol = N_train * p)
   for (i in 1:N_train) {
     for (j in i:N_train) {
       R_ns_ij <- compute_R_NS(train_coords[i,], train_coords[j,], train_params[[i]], train_params[[j]])
-      C_trace_ij <- sum(diag(train_params[[i]]$A %*% t(train_params[[j]]$A))) * R_ns_ij
+      
+      # MODIFIED: Use the simplified model C(i,j) = sigma(i) * sigma(j) * R_NS(i,j)
+      C_trace_ij <- sigma_train[i] * sigma_train[j] * R_ns_ij
+      
       for(k in 1:p){
         C_trace_train[(i-1)*p+k, (j-1)*p+k] <- C_trace_ij
         if(i!=j) C_trace_train[(j-1)*p+k, (i-1)*p+k] <- C_trace_ij
@@ -201,7 +209,6 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
     }
   }
   inv_C_trace_train <- chol2inv(chol(C_trace_train + diag(nugget, N_train * p)))
-  
   
   # Cross-covariance matrices (Train <-> Test)
   C_block_traintest_Op <- matrix(0, nrow = N_train * p, ncol = N_test * p)
@@ -212,14 +219,18 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
       R_ns_ij <- compute_R_NS(train_coords[i,], test_coords[j,], train_params[[i]], test_params[[j]])
       idx_i <- ((i-1)*p + 1):(i*p); idx_j <- ((j-1)*p + 1):(j*p)
       
+      # Op-NS cross-covariance (correct model)
       C_block_traintest_Op[idx_i, idx_j] <- train_params[[i]]$A %*% t(test_params[[j]]$A) * R_ns_ij
-      C_trace_ij_test <- sum(diag(train_params[[i]]$A %*% t(test_params[[j]]$A))) * R_ns_ij
+      
+      # MODIFIED: Trace-NS cross-covariance (simplified model)
+      C_trace_ij_test <- sigma_train[i] * sigma_test[j] * R_ns_ij
+      
       for(k in 1:p){
         C_trace_traintest[(i-1)*p+k, (j-1)*p+k] <- C_trace_ij_test
       }
     }
   }
-  
+
   weights_Op <- inv_C_block_train_Op %*% C_block_traintest_Op
   weights_Trace <- inv_C_trace_train %*% C_trace_traintest
   
@@ -324,7 +335,7 @@ create_and_save_setup_plots <- function() {
   cat("--- Simulation setup plots saved to K_structure_plot.png and r_intensity_plot.png ---\n")
 }
 
-# --- SECTION 4B: FUNCTIONAL REALIZATION PLOTS (NEW CODE) ---
+# --- SECTION 4B: FUNCTIONAL REALIZATION PLOTS ---
 
 #' Create and save plots of functional realizations.
 #'
@@ -405,11 +416,11 @@ N_values <- c(20, 30, 40, 60, 150, 200) # Training sizes
 
 scenarios_to_run <- c(
   "non-proportional",
-  "prop_v1",           # Proportional based on vertex (-1, -1)
-  "prop_v2",           # Proportional based on vertex (1, -1)
+  "prop_v1",          # Proportional based on vertex (-1, -1)
+  "prop_v2",          # Proportional based on vertex (1, -1)
   "prop_center",
-  "prop_v3",           # Proportional based on vertex (-1, 1)
-  "prop_v4"            # Proportional based on vertex (1, 1)
+  "prop_v3",          # Proportional based on vertex (-1, 1)
+  "prop_v4"           # Proportional based on vertex (1, 1)
 )
 
 # Set up parallel processing
@@ -425,6 +436,10 @@ experiment_grid <- expand.grid(
 # Enable progress bars for future_lapply
 handlers(global = TRUE)
 handlers("progress")
+
+# Generate and save the setup plots before running the main simulation
+create_and_save_setup_plots()
+create_functional_realization_plots(fixed_seed = set_seed)
 
 # Run the simulation experiment
 cat("--- STARTING SIMULATION ---\n")
@@ -520,7 +535,7 @@ significance_plot <- ggplot(plot_data_final, aes(x = N_train, y = Value)) +
   geom_line(linewidth = 1, color = "#0072B2") +
   geom_point(size = 2.5, color = "#0072B2") +
   facet_grid(Metric ~ Scenario_Label, scales = "free_y", switch = "y") +
-  scale_x_continuous(breaks = c(100, 300, 500)) +
+  scale_x_continuous(breaks = N_values) +
   labs(
     title = "Kriging Performance with Known Parameters: MSPE Difference and Statistical Significance",
     subtitle = "Positive MSPE difference favors Op-NS. Lower panel shows p-values for one-tailed paired t-test.",
@@ -545,8 +560,3 @@ ggsave("mspe_significance_plot.png", plot = significance_plot, width = 14, heigh
 
 cat("\n--- PLOT SAVED to mspe_significance_plot.png ---\n")
 print(significance_plot)
-
-
-# Generate and save the setup plots before running the main simulation
-create_and_save_setup_plots()
-create_functional_realization_plots(fixed_seed = set_seed)
