@@ -16,7 +16,6 @@
 
 # --- SECTION 1: SCRIPT SETUP ---
 library(devtools)
-# Note: Using the plural 'simulation-plots' as it is more likely correct.
 install_github("g-decarlo/FunctionalLSM")
 library(LocallyStationaryModels)
 
