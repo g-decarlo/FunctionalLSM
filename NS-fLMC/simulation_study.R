@@ -493,7 +493,7 @@ simulation_results_labeled <- simulation_results %>%
 
 
 # Calculate the paired difference for MSPE and the p-value from a one-tailed t-test
-threshold <- 3*2^(-23)
+threshold <- 4*2^(-23)
 summary_stats <- simulation_results_labeled %>%
   group_by(Scenario_Label, N_train) %>%
   summarise(
@@ -535,7 +535,7 @@ significance_plot <- ggplot(plot_data_final, aes(x = N_train, y = Value)) +
   geom_line(linewidth = 1, color = "#0072B2") +
   geom_point(size = 2.5, color = "#0072B2") +
   facet_grid(Metric ~ Scenario_Label, scales = "free_y", switch = "y") +
-  scale_x_continuous(breaks = N_values) +
+  scale_x_continuous(breaks = c(100, 300, 500)) +
   labs(
     title = "Kriging Performance with Known Parameters: MSPE Difference and Statistical Significance",
     subtitle = "Positive MSPE difference favors Op-NS. Lower panel shows p-values for one-tailed paired t-test.",
@@ -560,3 +560,4 @@ ggsave("mspe_significance_plot.png", plot = significance_plot, width = 14, heigh
 
 cat("\n--- PLOT SAVED to mspe_significance_plot.png ---\n")
 print(significance_plot)
+
