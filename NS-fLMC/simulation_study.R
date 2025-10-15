@@ -15,6 +15,11 @@
 
 # --- SECTION 1: SCRIPT SETUP ---
 
+library(devtools)
+install_github("g-decarlo/FunctionalLSM")
+library(LocallyStationaryModels)
+
+
 # Install missing packages if necessary
 packages <- c("dplyr", "ggplot2", "tidyr", "Matrix",
               "future.apply", "progressr", "gridExtra", "ellipse", "ggrepel")
