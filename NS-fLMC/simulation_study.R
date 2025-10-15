@@ -15,7 +15,7 @@
 
 # --- SECTION 1: SCRIPT SETUP ---
 library(devtools)
-install_github("g-decarlo/FunctionalLSM")
+#install_github("g-decarlo/FunctionalLSM")
 library(LocallyStationaryModels)
 
 # Install missing packages if necessary
@@ -401,7 +401,7 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
 set_seed = 0
 set.seed(set_seed) # for reproducibility
 M_rep <- 350      # Number of repetitions for stable estimates
-N_values <- c(20, 50, 75, 100, 200, 300) # Training sizes
+N_values <- c(20, 30, 40, 60, 150, 200) # Training sizes
 
 scenarios_to_run <- c(
   "non-proportional",
@@ -478,15 +478,16 @@ simulation_results_labeled <- simulation_results %>%
 
 
 # Calculate the paired difference for MSPE and the p-value from a one-tailed t-test
+threshold <- 4*2^(-23)
 summary_stats <- simulation_results_labeled %>%
   group_by(Scenario_Label, N_train) %>%
   summarise(
     Mean_Diff_MSPE = mean(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE),
     SE_Diff_MSPE = sd(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE) / sqrt(n()),
     P_Value = tryCatch({
-      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > 2^(-20)
+      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > threshold
       # This tests if Op-NS is better than Trace-NS by more than the threshold.
-      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = 2^(-20))$p.value
+      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = threshold)$p.value
     }, error = function(e) { NA_real_ }),
     .groups = 'drop'
   ) %>%
