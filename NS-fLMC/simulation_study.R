@@ -493,7 +493,7 @@ simulation_results_labeled <- simulation_results %>%
 
 
 # Calculate the paired difference for MSPE and the p-value from a one-tailed t-test
-threshold <- 4*2^(-23)
+threshold <- 3*2^(-23)
 summary_stats <- simulation_results_labeled %>%
   group_by(Scenario_Label, N_train) %>%
   summarise(
