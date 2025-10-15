@@ -68,7 +68,7 @@ generate_scenario_parameters <- function(coords,
   if (scenario == "non-proportional") {
     # Original unbalanced parameterization
     K11 <- 2 - x;  K12 <- 0
-    K21 <- -2;     K22 <- 2 + y
+    K21 <- -2;    K22 <- 2 + y
   } else {
     # Proportional cases: K is a fixed matrix, derived from a specific point
     fixed_coords <- switch(scenario,
@@ -76,7 +76,7 @@ generate_scenario_parameters <- function(coords,
                            "prop_v1"     = c(-1, -1),  # Proportional @ (-1, -1)
                            "prop_v2"     = c(1, -1),   # Proportional @ (1, -1)
                            "prop_v3"     = c(-1, 1),   # Proportional @ (-1, 1)
-                           "prop_v4"     = c(1, 1)     # Proportional @ (1, 1)
+                           "prop_v4"     = c(1, 1)    # Proportional @ (1, 1)
     )
     x_fixed <- fixed_coords[1]; y_fixed <- fixed_coords[2]
     
@@ -335,7 +335,7 @@ create_and_save_setup_plots <- function() {
 #' @param p The dimensionality of the process (number of basis functions).
 #' @param nugget The nugget variance.
 create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nugget = 1e-4, fixed_seed = 0) {
-
+  
   scenario_name <- "non-proportional"
   grid_points <- as.matrix(expand.grid(seq(-1, 1, length.out = 50), seq(-1, 1, length.out = 50)))
   
@@ -406,11 +406,11 @@ options(digits = 5)
 
 scenarios_to_run <- c(
   "non-proportional",
-  "prop_v1",          # Proportional based on vertex (-1, -1)
-  "prop_v2",          # Proportional based on vertex (1, -1)
+  "prop_v1",           # Proportional based on vertex (-1, -1)
+  "prop_v2",           # Proportional based on vertex (1, -1)
   "prop_center",
-  "prop_v3",          # Proportional based on vertex (-1, 1)
-  "prop_v4"           # Proportional based on vertex (1, 1)
+  "prop_v3",           # Proportional based on vertex (-1, 1)
+  "prop_v4"            # Proportional based on vertex (1, 1)
 )
 
 # Set up parallel processing
@@ -478,13 +478,17 @@ simulation_results_labeled <- simulation_results %>%
   )))
 
 
-# Calculate the paired difference for MSPE and the p-value from a paired t-test
+# Calculate the paired difference for MSPE and the p-value from a one-tailed t-test
 summary_stats <- simulation_results_labeled %>%
   group_by(Scenario_Label, N_train) %>%
   summarise(
     Mean_Diff_MSPE = mean(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE),
     SE_Diff_MSPE = sd(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE) / sqrt(n()),
-    P_Value = tryCatch({ t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE)$p.value }, error = function(e) { NA_real_ }),
+    P_Value = tryCatch({
+      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > 1e-5
+      # This tests if Op-NS is better than Trace-NS by more than the threshold.
+      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = 1e-6)$p.value
+    }, error = function(e) { NA_real_ }),
     .groups = 'drop'
   ) %>%
   mutate(
@@ -499,10 +503,10 @@ plot_data_diff <- summary_stats %>%
 
 plot_data_pval <- summary_stats %>%
   select(Scenario_Label, N_train, Value = P_Value) %>%
-  mutate(Metric = "Paired t-test p-value", CI_Lower = NA, CI_Upper = NA)
+  mutate(Metric = "One-tailed t-test p-value", CI_Lower = NA, CI_Upper = NA)
 
 plot_data_final <- bind_rows(plot_data_diff, plot_data_pval) %>%
-  mutate(Metric = factor(Metric, levels = c("MSPE Difference", "Paired t-test p-value")))
+  mutate(Metric = factor(Metric, levels = c("MSPE Difference", "One-tailed t-test p-value")))
 
 hline_data <- data.frame(
   Metric = factor(levels(plot_data_final$Metric), levels = levels(plot_data_final$Metric)),
@@ -519,7 +523,7 @@ significance_plot <- ggplot(plot_data_final, aes(x = N_train, y = Value)) +
   scale_x_continuous(breaks = c(100, 300, 500)) +
   labs(
     title = "Kriging Performance with Known Parameters: MSPE Difference and Statistical Significance",
-    subtitle = "Positive MSPE difference favors Op-NS model. Lower panel shows p-values for paired t-test.",
+    subtitle = "Positive MSPE difference favors Op-NS. Lower panel shows p-values for one-tailed test (Ha: Mean Diff > 1e-5).",
     x = "Number of Training Points (N_train)",
     y = NULL
   ) +
@@ -546,6 +550,3 @@ print(significance_plot)
 # Generate and save the setup plots before running the main simulation
 create_and_save_setup_plots()
 create_functional_realization_plots(fixed_seed = set_seed)
-
-
-
