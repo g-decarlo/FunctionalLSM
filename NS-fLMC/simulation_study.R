@@ -15,7 +15,7 @@
 
 # --- SECTION 1: SCRIPT SETUP ---
 library(devtools)
-#install_github("g-decarlo/FunctionalLSM")
+install_github("g-decarlo/FunctionalLSM")
 library(LocallyStationaryModels)
 
 # Install missing packages if necessary
@@ -326,7 +326,7 @@ create_and_save_setup_plots <- function() {
 
 # --- SECTION 4B: FUNCTIONAL REALIZATION PLOTS (NEW CODE) ---
 
-#' Create and save publication-quality plots of functional realizations.
+#' Create and save plots of functional realizations.
 #'
 #' This function generates realizations from the non-proportional scenario,
 #' reconstructs the corresponding functions, and plots them overlapped.
