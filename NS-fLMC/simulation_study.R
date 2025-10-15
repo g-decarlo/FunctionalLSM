@@ -17,7 +17,6 @@
 
 library(devtools)
 install_github("g-decarlo/FunctionalLSM")
-library(LocallyStationaryModels)
 
 
 # Install missing packages if necessary
@@ -158,7 +157,7 @@ run_oracle_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p
   all_params <- generate_scenario_parameters(grid_points, scenario)
   
   # Generate the smooth part of the spatial process (M_repetitions)
-  sim_result_smooth <- LocallyStationaryModels:::samplelsm(
+  sim_result_smooth <- sample.lsm(
     d = grid_points, variogram_id = "exponential",
     parameters = all_params$params_for_sampling, dim = p, n_samples = M_repetitions
   )$simulated_processes
