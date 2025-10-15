@@ -398,11 +398,10 @@ create_functional_realization_plots <- function(n_curves_to_plot = 24, p = 2, nu
 
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
-set_seed = 1000
+set_seed = 0
 set.seed(set_seed) # for reproducibility
 M_rep <- 350      # Number of repetitions for stable estimates
-N_values <- c(20, 50, 100, 150, 200, 300, 500) # Training sizes
-options(digits = 5)
+N_values <- c(20, 50, 75, 100, 200, 300) # Training sizes
 
 scenarios_to_run <- c(
   "non-proportional",
@@ -485,9 +484,9 @@ summary_stats <- simulation_results_labeled %>%
     Mean_Diff_MSPE = mean(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE),
     SE_Diff_MSPE = sd(MSPE_Trace_NS - MSPE_Op_NS, na.rm = TRUE) / sqrt(n()),
     P_Value = tryCatch({
-      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > 1e-5
+      # One-tailed test: Ha: mean(MSPE_Trace_NS - MSPE_Op_NS) > 2^(-23)
       # This tests if Op-NS is better than Trace-NS by more than the threshold.
-      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = 1e-6)$p.value
+      t.test(MSPE_Trace_NS, MSPE_Op_NS, paired = TRUE, alternative = "greater", mu = 2^(-23))$p.value
     }, error = function(e) { NA_real_ }),
     .groups = 'drop'
   ) %>%
@@ -523,7 +522,7 @@ significance_plot <- ggplot(plot_data_final, aes(x = N_train, y = Value)) +
   scale_x_continuous(breaks = c(100, 300, 500)) +
   labs(
     title = "Kriging Performance with Known Parameters: MSPE Difference and Statistical Significance",
-    subtitle = "Positive MSPE difference favors Op-NS. Lower panel shows p-values for one-tailed test (Ha: Mean Diff > 1e-5).",
+    subtitle = "Positive MSPE difference favors Op-NS. Lower panel shows p-values for one-tailed paired t-test.",
     x = "Number of Training Points (N_train)",
     y = NULL
   ) +
