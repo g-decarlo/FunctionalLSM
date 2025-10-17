@@ -241,7 +241,7 @@ smooth.lsm <- function(model, newpoints, n_threads = -1)
   return(result)
 }
 
-sample.lsm <- function(d, variogram_id, parameters, dim = 1, n_samples = 1) {
-  result <- samplelsm(d, variogram_id, parameters, dim, n_samples)
+sample.lsm <- function(d, variogram_id, parameters, dim = 1, n_samples = 1, seed = 42) {
+  result <- samplelsm(d, variogram_id, parameters, dim, n_samples, seed)
   return(result)
 }

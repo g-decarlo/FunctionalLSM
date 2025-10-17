@@ -260,7 +260,7 @@ Rcpp::List smoothing(const Eigen::MatrixXd solutions, const Eigen::MatrixXd& anc
 }
 
 //[[Rcpp::export]]
-Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& variogram_id, const::Eigen::MatrixXd& parameters, const unsigned& dim, const unsigned& n_samples){
+Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& variogram_id, const::Eigen::MatrixXd& parameters, const unsigned& dim, const unsigned& n_samples, const unsigned& seed){
 
     if (dim == 1){
     VariogramFunction& cov = *(make_variogramiso(variogram_id[0]));
@@ -279,7 +279,7 @@ Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& v
     }
 
     Eigen::MatrixXd rand_normal(Eigen::MatrixXd::Zero(n,n_samples));
-    std::default_random_engine generator;
+    std::mt19937 generator(seed);
     std::normal_distribution<double> distribution(0.,1.0);
     for(size_t i = 0; i < n; i++){
         for(size_t j = 0; j < n_samples; j++){
@@ -325,7 +325,7 @@ Rcpp::List samplelsm(const Eigen::MatrixXd& d, const std::vector<std::string>& v
     }
 
     Eigen::MatrixXd rand_normal(Eigen::MatrixXd::Zero(n*dim,n_samples));
-    std::default_random_engine generator;
+    std::mt19937 generator(seed);
     std::normal_distribution<double> distribution(0.,1.0);
     for(size_t i = 0; i < n*dim; i++){
         for(size_t j = 0; j < n_samples; j++){
