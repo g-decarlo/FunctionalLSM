@@ -97,9 +97,6 @@ coords_test <- coords[test_idx, ]
 z_scores_trace_train <- z_scores[train_idx, 1:n_pcs_trace]
 z_scores_trace_test <- z_scores[test_idx, 1:n_pcs_trace]
 
-global_functional_variance <- mean(rowSums(z_scores_trace_test^2))
-cat(sprintf("Global functional variance of test set: %.4f\n", global_functional_variance))
-
 # 4. Stationary Model Analysis
 cat("\n--- STARTING STATIONARY MODEL ANALYSIS ---\n")
 anchor_points_stat <- find_anchorpoints.lsm(coords_train, 1, TRUE)
@@ -116,10 +113,8 @@ solution_trace_stat <- findsolutions.lsm(
   initial.position = c(50, 50, pi / 3, 20, 100), id = "exponentialnugget"
 )
 predictions_trace_stat <- predict.lsm(solution_trace_stat, coords_test, plot_output = FALSE)
-error_matrix_trace_stat <- z_scores_trace_test - predictions_trace_stat$zpredicted
-mspe_trace_stat <- mean(rowSums(error_matrix_trace_stat^2))
-r_squared_trace_stat <- 1 - (mspe_trace_stat / global_functional_variance)
-cat(sprintf("-> Trace-Stationary MSPE: %.4f, R^2: %.4f\n", mspe_trace_stat, r_squared_trace_stat))
+mspe_trace_stat <- mean(rowSums((z_scores_trace_test - predictions_trace_stat$zpredicted)^2))
+cat(sprintf("-> Trace-Stationary MSPE: %.4f\n", mspe_trace_stat))
 
 # 4.2 Simplified Op-Stationary Model
 cat("Running Simplified Op-Stationary model...\n")
@@ -131,12 +126,12 @@ for (k in 1:n_pcs_op) {
   z_scalar_train <- z_scores_op_train[, k, drop = FALSE]
   variogram_scalar_stat <- variogram.lsm(
     z = z_scalar_train, d = coords_train, a = anchor_points_stat$anchorpoints,
-    n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "identity", epsilon = 50
+    n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "Identity", epsilon = 50
   )
   solution_scalar_stat <- findsolutions.lsm(
     variogram_scalar_stat, remove_not_convergent = TRUE, lower.delta = 0.5,
-    upper.bound = c(50, 50, pi / 2, 10, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
-    initial.position = c(10, 10, pi / 3, 5, 10), id = "exponentialnugget"
+    upper.bound = c(100, 100, pi / 2, 200, 500), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+    initial.position = c(50, 50, pi / 3, 20, 100), id = "exponentialnugget"
   )
   predictions_scalar_stat <- predict.lsm(solution_scalar_stat, coords_test, plot_output = FALSE)
   predictions_op_matrix_stat[, k] <- predictions_scalar_stat$zpredicted
@@ -146,8 +141,7 @@ full_predictions_op_stat <- matrix(0, nrow = n_test, ncol = n_pcs_trace)
 full_predictions_op_stat[, 1:n_pcs_op] <- predictions_op_matrix_stat
 error_matrix_op_stat <- z_scores_trace_test - full_predictions_op_stat
 mspe_op_stat <- mean(rowSums(error_matrix_op_stat^2))
-r_squared_op_stat <- 1 - (mspe_op_stat / global_functional_variance)
-cat(sprintf("-> Op-Stationary MSPE: %.4f, R^2: %.4f\n", mspe_op_stat, r_squared_op_stat))
+cat(sprintf("-> Op-Stationary MSPE: %.4f\n", mspe_op_stat))
 
 
 # 5. Epsilon Tuning Loop for Non-Stationary Models
@@ -155,12 +149,12 @@ cat("\n--- STARTING NON-STATIONARY MODEL ANALYSIS (EPSILON TUNING) ---\n")
 anchor_points_ns <- find_anchorpoints.lsm(coords_train, 12, TRUE)
 epsilon_values <- c(10, 15, 20)
 results_df <- data.frame()
+solution_list <- list() # Store solution for each epsilon
 
 for (current_epsilon in epsilon_values) {
   cat(sprintf("\n--- TESTING EPSILON = %d ---\n", current_epsilon))
   
   # Trace-NS Model
-  cat("Running Trace-NS model...\n")
   variogram_trace <- variogram.lsm(
     z = z_scores_trace_train, d = coords_train, a = anchor_points_ns$anchorpoints,
     epsilon = current_epsilon, n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "gaussian"
@@ -170,15 +164,15 @@ for (current_epsilon in epsilon_values) {
     upper.bound = c(current_epsilon, current_epsilon, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
     initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
   )
+  solution_list[[as.character(current_epsilon)]] <- solution_trace
+  
+  # FIX: Store prediction result in a variable first
   predictions_trace <- predict.lsm(solution_trace, coords_test, plot_output = FALSE)
   mspe_trace <- mean(rowSums((z_scores_trace_test - predictions_trace$zpredicted)^2))
-  r_squared_trace <- 1 - (mspe_trace / global_functional_variance)
-  cat(sprintf("-> Trace-NS MSPE: %.4f, R^2: %.4f\n", mspe_trace, r_squared_trace))
+  cat(sprintf("-> Trace-NS MSPE: %.4f\n", mspe_trace))
   
   # Simplified Op-NS Model
-  cat("Running Simplified Op-NS model...\n")
   predictions_op_matrix <- matrix(NA, nrow = n_test, ncol = n_pcs_op)
-  
   for (k in 1:n_pcs_op) {
     z_scalar_train <- z_scores_op_train[, k, drop = FALSE]
     variogram_scalar <- variogram.lsm(
@@ -190,44 +184,58 @@ for (current_epsilon in epsilon_values) {
       upper.bound = c(current_epsilon, current_epsilon, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
       initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
     )
+    # FIX: Store prediction result in a variable first
     predictions_scalar <- predict.lsm(solution_scalar, coords_test, plot_output = FALSE)
     predictions_op_matrix[, k] <- predictions_scalar$zpredicted
   }
-  
   full_predictions_op <- matrix(0, nrow = n_test, ncol = n_pcs_trace)
   full_predictions_op[, 1:n_pcs_op] <- predictions_op_matrix
   mspe_op <- mean(rowSums((z_scores_trace_test - full_predictions_op)^2))
-  r_squared_op <- 1 - (mspe_op / global_functional_variance)
-  cat(sprintf("-> Op-NS MSPE: %.4f, R^2: %.4f\n", mspe_op, r_squared_op))
+  cat(sprintf("-> Op-NS MSPE: %.4f\n", mspe_op))
   
   results_df <- rbind(results_df, data.frame(
-    epsilon = current_epsilon, trace_mspe = mspe_trace, trace_r_squared = r_squared_trace,
-    op_mspe = mspe_op, op_r_squared = r_squared_op
+    epsilon = current_epsilon, trace_mspe = mspe_trace, op_mspe = mspe_op
   ))
 }
 
-# 6. Final Comparison & Results
+# 6. Final Comparison & Saving Champion Model
 cat("\n\n--- FINAL RESULTS SUMMARY ---\n")
+# Find the best result for each non-stationary method from the tuning loop
 best_trace_ns_row <- results_df[which.min(results_df$trace_mspe), ]
 best_op_ns_row <- results_df[which.min(results_df$op_mspe), ]
 
+# Print the full summary of all models
 cat("--- Stationary Models ---\n")
-cat(sprintf("Trace-Stat: MSPE = %.4f, R^2 = %.4f\n", mspe_trace_stat, r_squared_trace_stat))
-cat(sprintf("Op-Stat:    MSPE = %.4f, R^2 = %.4f\n", mspe_op_stat, r_squared_op_stat))
+cat(sprintf("Trace-Stat: MSPE = %.4f\n", mspe_trace_stat))
+cat(sprintf("Op-Stat:    MSPE = %.4f\n", mspe_op_stat))
 
 cat("\n--- Best Non-Stationary Models ---\n")
-cat(sprintf("Best Trace-NS: Epsilon = %d, MSPE = %.4f, R^2 = %.4f\n",
-            best_trace_ns_row$epsilon, best_trace_ns_row$trace_mspe, best_trace_ns_row$trace_r_squared))
-cat(sprintf("Best Op-NS:    Epsilon = %d, MSPE = %.4f, R^2 = %.4f\n",
-            best_op_ns_row$epsilon, best_op_ns_row$op_mspe, best_op_ns_row$op_r_squared))
+cat(sprintf("Best Trace-NS: Epsilon = %d, MSPE = %.4f\n",
+            best_trace_ns_row$epsilon, best_trace_ns_row$trace_mspe))
+cat(sprintf("Best Op-NS:    Epsilon = %d, MSPE = %.4f\n",
+            best_op_ns_row$epsilon, best_op_ns_row$op_mspe))
 
-# Determine the overall best model
+# Determine the overall best model by comparing all four methods
 all_results <- data.frame(
   model = c("Trace-Stat", "Op-Stat", "Trace-NS", "Op-NS"),
   mspe = c(mspe_trace_stat, mspe_op_stat, best_trace_ns_row$trace_mspe, best_op_ns_row$op_mspe)
 )
-best_model <- all_results[which.min(all_results$mspe), ]
+best_model_info <- all_results[which.min(all_results$mspe), ]
 
-cat("\n--- Overall Conclusion ---\n")
-cat(sprintf("The best performing model is: %s with an MSPE of %.4f.\n", best_model$model, best_model$mspe))
+cat(sprintf("\n--- Overall Winner: %s with an MSPE of %.4f ---\n", best_model_info$model, best_model_info$mspe))
+
+# Save the champion model object if it's the non-stationary trace model
+if (best_model_info$model == "Trace-NS") {
+  champion_epsilon <- best_trace_ns_row$epsilon
+  champion_solution <- solution_list[[as.character(champion_epsilon)]]
+  
+  cat(sprintf("\n--- SAVING CHAMPION MODEL ---\n"))
+  cat(sprintf("The champion is Trace-NS with epsilon = %d.\n", champion_epsilon))
+  cat("Saving the 'champion_solution' and 'pca_result' objects to 'champion_model.RData'.\n")
+  
+  save(champion_solution, pca_result, file = "champion_model.RData")
+} else {
+  cat("\nChampion model was not Trace-NS. No model object saved for the plotting script.\n")
+  cat("The plotting script expects a saved 'champion_solution' object from a Trace-NS model.\n")
+}
 
