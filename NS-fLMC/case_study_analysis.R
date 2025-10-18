@@ -25,7 +25,7 @@ set.seed(42)
 
 # Define key hyperparameters for the analysis
 map_granularity <- 50          # Resolution of the prediction grid (e.g., 50x50)
-station_filter_epsilon <- 1.0  # Min distance between stations in degrees (~111km)
+station_filter_epsilon <- 0.2  # Min distance between stations in degrees (~22km)
 num_anchor_points <- 12        # Number of anchor points for the NS model
 
 # Load the champion model configuration and PCA results

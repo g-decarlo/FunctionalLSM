@@ -6,11 +6,6 @@
 # to identify the best-performing model for the U.S. rainfall dataset.
 # The best model's configuration is then saved for the final analysis.
 #
-# OUTPUT:
-# 1. A summary of model performance (MSPE) printed to the console.
-# 2. A file named 'champion_model.RData' containing the winning model object
-#    and the PCA results, to be used by '2_case_study_analysis.R'.
-# 3. A CSV file 'plots/model_comparison_results.csv' with the detailed results.
 
 # ---
 # 1. SETUP
