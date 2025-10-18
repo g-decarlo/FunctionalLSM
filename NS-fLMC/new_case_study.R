@@ -44,7 +44,7 @@ pca_result <- prcomp(smoothed_splines$Y_clr, scale. = TRUE, center = TRUE)
 z_scores <- pca_result$x
 
 # 2.5 Station Filtering
-station_filter_epsilon <- 0.4
+station_filter_epsilon <- 0.2
 n_initial <- nrow(coords)
 indices_to_process <- 1:n_initial
 indices_to_keep <- c()
@@ -82,7 +82,7 @@ n_pcs_trace <- which(variance_explained > 0.999999)[1]
 cat(sprintf("Using %d components to explain > 99.9999%% of variance.\n", n_pcs_trace))
 
 n_total <- nrow(coords)
-test_percentage <- 0.20
+test_percentage <- 0.30
 n_test <- floor(n_total * test_percentage)
 n_train <- n_total - n_test
 
@@ -108,12 +108,12 @@ anchor_points_stat <- find_anchorpoints.lsm(coords_train, 1, TRUE)
 cat("Running Trace-Stationary model...\n")
 variogram_trace_stat <- variogram.lsm(
   z = z_scores_trace_train, d = coords_train, a = anchor_points_stat$anchorpoints,
-  n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "Identity", epsilon = 1e10
+  n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "Identity", epsilon = 50
 )
 solution_trace_stat <- findsolutions.lsm(
   variogram_trace_stat, remove_not_convergent = TRUE, lower.delta = 0.5,
-  upper.bound = c(10, 10, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
-  initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
+  upper.bound = c(100, 100, pi / 2, 200, 500), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+  initial.position = c(50, 50, pi / 3, 20, 100), id = "exponentialnugget"
 )
 predictions_trace_stat <- predict.lsm(solution_trace_stat, coords_test, plot_output = FALSE)
 error_matrix_trace_stat <- z_scores_trace_test - predictions_trace_stat$zpredicted
@@ -131,12 +131,12 @@ for (k in 1:n_pcs_op) {
   z_scalar_train <- z_scores_op_train[, k, drop = FALSE]
   variogram_scalar_stat <- variogram.lsm(
     z = z_scalar_train, d = coords_train, a = anchor_points_stat$anchorpoints,
-    n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "identity", epsilon = 1e100
+    n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "identity", epsilon = 50
   )
   solution_scalar_stat <- findsolutions.lsm(
     variogram_scalar_stat, remove_not_convergent = TRUE, lower.delta = 0.5,
-    upper.bound = c(10, 10, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
-    initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
+    upper.bound = c(50, 50, pi / 2, 10, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+    initial.position = c(10, 10, pi / 3, 5, 10), id = "exponentialnugget"
   )
   predictions_scalar_stat <- predict.lsm(solution_scalar_stat, coords_test, plot_output = FALSE)
   predictions_op_matrix_stat[, k] <- predictions_scalar_stat$zpredicted
@@ -167,7 +167,7 @@ for (current_epsilon in epsilon_values) {
   )
   solution_trace <- findsolutions.lsm(
     variogram_trace, remove_not_convergent = TRUE, lower.delta = 0.5,
-    upper.bound = c(10, 10, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+    upper.bound = c(current_epsilon, current_epsilon, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
     initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
   )
   predictions_trace <- predict.lsm(solution_trace, coords_test, plot_output = FALSE)
@@ -187,7 +187,7 @@ for (current_epsilon in epsilon_values) {
     )
     solution_scalar <- findsolutions.lsm(
       variogram_scalar, remove_not_convergent = TRUE, lower.delta = 0.5,
-      upper.bound = c(10, 10, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+      upper.bound = c(current_epsilon, current_epsilon, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
       initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
     )
     predictions_scalar <- predict.lsm(solution_scalar, coords_test, plot_output = FALSE)
