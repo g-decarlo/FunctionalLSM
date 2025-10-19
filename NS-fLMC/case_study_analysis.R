@@ -19,13 +19,12 @@ pacman::p_load(
   compositions, data.table, robCompositions, ggplot2, dplyr, maps, 
   mapproj, cowplot, rworldmap, sp, RColorBrewer
 )
-
 # Ensure reproducibility
 set.seed(42)
 
 # Define key hyperparameters for the analysis
-map_granularity <- 50          # Resolution of the prediction grid (e.g., 50x50)
-station_filter_epsilon <- 0.2  # Min distance between stations in degrees (~22km)
+map_granularity <- 150          # Resolution of the prediction grid (e.g., 50x50)
+station_filter_epsilon <- 0.0001  # Min distance between stations in degrees (~10m)
 num_anchor_points <- 12        # Number of anchor points for the NS model
 
 # Load the champion model configuration and PCA results
@@ -37,9 +36,9 @@ tryCatch({
 
 # Load the full, original dataset
 tryCatch({
-  coords_full <- as.matrix(read.csv("data/coordinatesrain.csv"))
-  rain_obs_full <- read.csv("data/rainobservations.csv")
-  density_mat_full <- as.matrix(read.table("data/density_matrix.prn", as.is = TRUE))
+  coords_full <- as.matrix(read.csv("NS-fLMC/data/coordinatesrain.csv"))
+  rain_obs_full <- read.csv("NS-fLMC/data/rainobservations.csv")
+  density_mat_full <- as.matrix(read.table("NS-fLMC/data/density_matrix.prn", as.is = TRUE))
 }, error = function(e) {
   stop("Data files not found. Please ensure they are in a 'data/' subdirectory.")
 })
@@ -103,9 +102,9 @@ variogram_full <- variogram.lsm(
   epsilon = champion_epsilon, n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "gaussian"
 )
 solution_full_functional <- findsolutions.lsm(
-  variogram_full, remove_not_convergent = TRUE, lower.delta = 0.5,
-  upper.bound = c(champion_epsilon, champion_epsilon, pi/2, 30, 70), lower.bound = c(2,2,0,1e-8,1e-8),
-  initial.position = c(12, 12, pi/3, 11, .12), id = "exponentialnugget"
+  variogram_full, remove_not_convergent = TRUE, lower.delta = 0.1,
+  upper.bound = c(champion_epsilon, champion_epsilon, pi / 2, 20, 50), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
+  initial.position = c(10, 10, pi / 3, 10, 1), id = "exponentialnugget"
 )
 
 cat("--- Fitting final scalar model for rain probability ---\n")

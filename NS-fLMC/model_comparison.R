@@ -1,11 +1,10 @@
-# MODEL COMPARISON AND SELECTION
+# SCRIPT 1: MODEL COMPARISON AND SELECTION
 #
 # PURPOSE:
 # This script performs a systematic comparison of four spatial models
 # (Trace-Stat, Op-Stat, Trace-NS, Op-NS)
 # to identify the best-performing model for the U.S. rainfall dataset.
 # The best model's configuration is then saved for the final analysis.
-#
 
 # ---
 # 1. SETUP
@@ -23,9 +22,9 @@ set.seed(42)
 # ---
 # Load data from the 'data' subdirectory.
 tryCatch({
-  coords <- as.matrix(read.csv("data/coordinatesrain.csv"))
-  rain_obs <- read.csv("data/rainobservations.csv")
-  density_mat <- as.matrix(read.table("data/density_matrix.prn", as.is = TRUE))
+  coords <- as.matrix(read.csv("NS-fLMC/data/coordinatesrain.csv"))
+  rain_obs <- read.csv("NS-fLMC/data/rainobservations.csv")
+  density_mat <- as.matrix(read.table("NS-fLMC/data/density_matrix.prn", as.is = TRUE))
 }, error = function(e) {
   stop("Data files not found. Please ensure they are in a 'data/' subdirectory.")
 })
@@ -122,7 +121,13 @@ solution_trace_stat <- findsolutions.lsm(
 )
 predictions_trace_stat <- predict.lsm(solution_trace_stat, coords_test, plot_output = FALSE)
 mspe_trace_stat <- mean(rowSums((z_scores_trace_test - predictions_trace_stat$zpredicted)^2))
-cat(sprintf("-> Trace-Stationary MSPE: %.4f\n", mspe_trace_stat))
+
+if (mspe_trace_stat > 300) {
+  cat("-> Trace-Stationary MSPE: Diverged (>300)\n")
+  mspe_trace_stat <- Inf
+} else {
+  cat(sprintf("-> Trace-Stationary MSPE: %.4f\n", mspe_trace_stat))
+}
 
 # 5.2 Op-Stationary Model
 cat("Running Op-Stationary model...\n")
@@ -150,20 +155,26 @@ full_predictions_op_stat <- matrix(0, nrow = n_test, ncol = n_pcs_trace)
 full_predictions_op_stat[, 1:n_pcs_op] <- predictions_op_matrix_stat
 error_matrix_op_stat <- z_scores_trace_test - full_predictions_op_stat
 mspe_op_stat <- mean(rowSums(error_matrix_op_stat^2))
-cat(sprintf("-> Op-Stationary MSPE: %.4f\n", mspe_op_stat))
+
+if (mspe_op_stat > 300) {
+  cat("-> Op-Stationary MSPE: Diverged (>300)\n")
+  mspe_op_stat <- Inf
+} else {
+  cat(sprintf("-> Op-Stationary MSPE: %.4f\n", mspe_op_stat))
+}
 
 # ---
 # 6. NON-STATIONARY MODEL ANALYSIS (EPSILON TUNING)
 # ---
 cat("\n--- STARTING NON-STATIONARY MODEL ANALYSIS ---\n")
 anchor_points_ns <- find_anchorpoints.lsm(coords_train, 12, TRUE)
-epsilon_values <- c(8, 10, 15, 20)
+epsilon_values <- c(5, 8, 10, 15, 20)
 results_df <- data.frame()
 solution_list <- list()
 
 for (current_epsilon in epsilon_values) {
   cat(sprintf("\n--- Testing Epsilon = %d ---\n", current_epsilon))
-
+  
   # 6.1 Trace-NS Model
   variogram_trace <- variogram.lsm(
     z = z_scores_trace_train, d = coords_train, a = anchor_points_ns$anchorpoints,
@@ -178,8 +189,14 @@ for (current_epsilon in epsilon_values) {
   
   predictions_trace <- predict.lsm(solution_trace, coords_test, plot_output = FALSE)
   mspe_trace <- mean(rowSums((z_scores_trace_test - predictions_trace$zpredicted)^2))
-  cat(sprintf("-> Trace-NS MSPE: %.4f\n", mspe_trace))
-
+  
+  if (mspe_trace > 300) {
+    cat("-> Trace-NS MSPE: Diverged (>300)\n")
+    mspe_trace <- Inf
+  } else {
+    cat(sprintf("-> Trace-NS MSPE: %.4f\n", mspe_trace))
+  }
+  
   # 6.2 Op-NS Model
   predictions_op_matrix <- matrix(NA, nrow = n_test, ncol = n_pcs_op)
   for (k in 1:n_pcs_op) {
@@ -201,8 +218,14 @@ for (current_epsilon in epsilon_values) {
   full_predictions_op <- matrix(0, nrow = n_test, ncol = n_pcs_trace)
   full_predictions_op[, 1:n_pcs_op] <- predictions_op_matrix
   mspe_op <- mean(rowSums((z_scores_trace_test - full_predictions_op)^2))
-  cat(sprintf("-> Op-NS MSPE: %.4f\n", mspe_op))
-
+  
+  if (mspe_op > 300) {
+    cat("-> Op-NS MSPE: Diverged (>300)\n")
+    mspe_op <- Inf
+  } else {
+    cat(sprintf("-> Op-NS MSPE: %.4f\n", mspe_op))
+  }
+  
   results_df <- rbind(results_df, data.frame(
     epsilon = current_epsilon, trace_mspe = mspe_trace, op_mspe = mspe_op
   ))
@@ -251,3 +274,4 @@ if (best_model_info$model == "Trace-NS") {
 } else {
   cat("\nChampion model was not Trace-NS. The plotting script requires a saved Trace-NS model.\n")
 }
+
