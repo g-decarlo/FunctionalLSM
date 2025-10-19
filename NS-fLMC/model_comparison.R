@@ -118,8 +118,8 @@ variogram_trace_stat <- variogram.lsm(
 )
 solution_trace_stat <- findsolutions.lsm(
   variogram_trace_stat, remove_not_convergent = TRUE, lower.delta = 0.5,
-  upper.bound = c(100, 100, pi / 2, 200, 500), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
-  initial.position = c(50, 50, pi / 3, 20, 100), id = "exponentialnugget"
+  upper.bound = c(50, 50, pi / 2, 40, 100), lower.bound = c(1, 1, 0, 1e-8, 1e-8),
+  initial.position = c(1, 1, pi / 3, 30, 1), id = "exponentialnugget"
 )
 predictions_trace_stat <- predict.lsm(solution_trace_stat, coords_test, plot_output = FALSE)
 mspe_trace_stat <- mean(rowSums((z_scores_trace_test - predictions_trace_stat$zpredicted)^2))
