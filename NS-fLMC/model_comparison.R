@@ -10,6 +10,8 @@
 # 1. SETUP
 # ---
 # Required packages
+library(devtools)
+install_github("g-decarlo/FunctionalLSM", ref = "gdecarlo/case-study")
 library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(compositions, data.table, robCompositions, ggplot2, dplyr)
