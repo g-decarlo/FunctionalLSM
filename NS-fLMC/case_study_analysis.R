@@ -209,7 +209,7 @@ colnames(anchor_points_df) <- c("lon", "lat")
 ellipses_df <- do.call(rbind, lapply(1:nrow(original_anchor_coords), function(i) {
   params <- smoothed_params_at_anchors[i, ]
   center <- original_anchor_coords[i, ]
-  df <- ellipse_points(center, params[1]*0.2, params[2]*0.2, params[3]) # Scaled for visibility
+  df <- ellipse_points(center, params[1]*0.35, params[2]*0.35, params[3]) # Scaled for visibility
   df$group <- i
   return(df)
 }))
