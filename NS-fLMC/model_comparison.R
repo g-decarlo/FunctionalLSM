@@ -10,7 +10,6 @@
 # 1. SETUP
 # ---
 # Required packages
-library(devtools)
 library(LocallyStationaryModels)
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(compositions, data.table, robCompositions, ggplot2, dplyr)
@@ -169,7 +168,7 @@ if (mspe_op_stat > 300) {
 # ---
 cat("\n--- STARTING NON-STATIONARY MODEL ANALYSIS ---\n")
 anchor_points_ns <- find_anchorpoints.lsm(coords_train, 12, TRUE)
-epsilon_values <- c(5, 8, 10, 15, 20)
+epsilon_values <- c(3, 5, 8, 10, 15, 20)
 results_df <- data.frame()
 solution_list <- list()
 
