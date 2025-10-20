@@ -93,26 +93,34 @@ cd::matrix Predictor::build_etavec( cd::vector& params, vectorind& neighbourhood
 
 std::pair<cd::vector, matrix> Predictor::build_etakriging(const cd::vector& params, const cd::vector& pos) const
 {
-    size_t n = m_data->rows();
-
-    vector etakriging(n);
-    vector C0(n);
-    matrix correlationmatrix(n, n);
-    double sigma2 = params[3] * params[3];
-    VariogramFunction& gammaiso = *(m_gammaisoptr);
-    // compute the corralation matrix and C0
-    for (size_t i = 0; i < n; ++i) {
-        const vector& posi = m_data->row(i);
-        cd::vector s0 = posi - pos;
-        cd::vector paramsi = m_smt.smooth_vector(posi);
-        C0(i) = gammaiso(params, paramsi, s0[0], s0[1]);
-    }
-    // compute etakriging
-    etakriging = *m_kriging_matrix_inverse*C0;
-    // compute the variance
-    matrix krigingvariance(1,1);
-    krigingvariance(0,0) = params(3) * params(3) - C0.transpose() * etakriging;
-    return std::make_pair(etakriging, krigingvariance);
+  size_t n = m_data->rows();
+  vector etakriging(n);
+  vector c0(n);
+  VariogramFunction& gammaiso = *(m_gammaisoptr);
+  
+  // Build the vector of covariances, c0
+  for (size_t i = 0; i < n; ++i) {
+    const vector& posi = m_data->row(i);
+    cd::vector s0 = posi - pos;
+    cd::vector paramsi = m_smt.smooth_vector(posi);
+    
+    // Calculate C(h) = C(0) * correlation(h)
+    double total_sill_pred = (params[3] * params[3]) + ((params.size() > 4) ? params[4] : 0.0);
+    double total_sill_i = (paramsi[3] * paramsi[3]) + ((paramsi.size() > 4) ? paramsi[4] : 0.0);
+    double non_stationary_total_sill = std::sqrt(total_sill_pred * total_sill_i);
+    
+    c0(i) = non_stationary_total_sill * gammaiso.correlation(params, paramsi, s0[0], s0[1]);
+  }
+  
+  // Compute etakriging (the weights vector)
+  etakriging = *m_kriging_matrix_inverse * c0;
+  
+  // Compute the kriging variance
+  matrix krigingvariance(1,1);
+  double total_sill_pred = (params[3] * params[3]) + ((params.size() > 4) ? params[4] : 0.0);
+  krigingvariance(0,0) = total_sill_pred - c0.transpose() * etakriging;
+  
+  return std::make_pair(etakriging, krigingvariance);
 }
 
 std::pair<cd::matrix, cd::matrix> Predictor::build_etakrigingvec(const cd::vector& params, const cd::vector& pos) const
@@ -248,22 +256,31 @@ template <> cd::matrix Predictor::predict_z<cd::matrix, cd::matrix>(const cd::ma
 }
 
 cd::matrix Predictor::compute_kriging_matrix_inverse(){
-
-    VariogramFunction& gammaiso = *(m_gammaisoptr);
-    size_t n = m_data->rows();
-    matrix kriging_matrix(n,n);
-    for (size_t i = 0; i < n; ++i) {
-        const vector& posi = m_data->row(i);
-        cd::vector paramsi = m_smt.smooth_vector(posi);
-        for (size_t j = i; j < n; ++j) {
-            const vector& posj = m_data->row(j);
-            cd::vector paramsj = m_smt.smooth_vector(posj);
-            cd::vector s = posi - posj;
-            kriging_matrix(i, j) = gammaiso(paramsi, paramsj, s[0], s[1]);
-            kriging_matrix(j, i) = gammaiso(paramsi, paramsj, s[0], s[1]);
-        }
+  
+  VariogramFunction& gammaiso = *(m_gammaisoptr);
+  size_t n = m_data->rows();
+  matrix covariance_matrix(n,n);
+  
+  for (size_t i = 0; i < n; ++i) {
+    const vector& posi = m_data->row(i);
+    cd::vector paramsi = m_smt.smooth_vector(posi);
+    for (size_t j = i; j < n; ++j) {
+      const vector& posj = m_data->row(j);
+      cd::vector paramsj = m_smt.smooth_vector(posj);
+      cd::vector s = posi - posj;
+      
+      // Calculate C(h) = C(0) * correlation(h)
+      double total_sill_i = (paramsi[3] * paramsi[3]) + ((paramsi.size() > 4) ? paramsi[4] : 0.0);
+      double total_sill_j = (paramsj[3] * paramsj[3]) + ((paramsj.size() > 4) ? paramsj[4] : 0.0);
+      double non_stationary_total_sill = std::sqrt(total_sill_i * total_sill_j);
+      
+      double covariance = non_stationary_total_sill * gammaiso.correlation(paramsi, paramsj, s[0], s[1]);
+      
+      covariance_matrix(i, j) = covariance;
+      covariance_matrix(j, i) = covariance;
     }
-    return 	kriging_matrix.llt().solve(Eigen::MatrixXd::Identity(n,n));
+  }
+  return 	covariance_matrix.llt().solve(Eigen::MatrixXd::Identity(n,n));
 }
 
 cd::matrix Predictor::compute_kriging_matrix_inverse_vec(){
