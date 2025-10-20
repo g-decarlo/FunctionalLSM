@@ -112,12 +112,12 @@ anchor_points_stat <- find_anchorpoints.lsm(coords_train, 1, TRUE)
 cat("Running Trace-Stationary model...\n")
 variogram_trace_stat <- variogram.lsm(
   z = z_scores_trace_train, d = coords_train, a = anchor_points_stat$anchorpoints,
-  n_angles = 6, n_intervals = 24, dim = 1, kernel_id = "Identity", epsilon = 50
+  n_angles = 8, n_intervals = 32, dim = 1, kernel_id = "Identity", epsilon = 50
 )
 solution_trace_stat <- findsolutions.lsm(
   variogram_trace_stat, remove_not_convergent = TRUE, lower.delta = 0.5,
-  upper.bound = c(50, 50, pi / 2, 40, 100), lower.bound = c(1, 1, 0, 1e-8, 1e-8),
-  initial.position = c(1, 1, pi / 3, 30, 1), id = "exponentialnugget"
+  upper.bound = c(5, 5, pi / 2, 20, 50), lower.bound = c(1e-8, 1e-8, 1e-8, 1e-8, 1e-8),
+  initial.position = c(1, 1, pi / 3, 10, 50), id = "exponentialnugget"
 )
 predictions_trace_stat <- predict.lsm(solution_trace_stat, coords_test, plot_output = FALSE)
 mspe_trace_stat <- mean(rowSums((z_scores_trace_test - predictions_trace_stat$zpredicted)^2))
@@ -143,8 +143,8 @@ for (k in 1:n_pcs_op) {
   )
   solution_scalar_stat <- findsolutions.lsm(
     variogram_scalar_stat, remove_not_convergent = TRUE, lower.delta = 0.5,
-    upper.bound = c(100, 100, pi / 2, 200, 500), lower.bound = c(2, 2, 0, 1e-8, 1e-8),
-    initial.position = c(50, 50, pi / 3, 20, 100), id = "exponentialnugget"
+    upper.bound = c(5, 5, pi / 2, 20, 50), lower.bound = c(1e-8, 1e-8, 1e-8, 1e-8, 1e-8),
+    initial.position = c(1, 1, pi / 3, 10, 50), id = "exponentialnugget"
   )
   predictions_scalar_stat <- predict.lsm(solution_scalar_stat, coords_test, plot_output = FALSE)
   predictions_op_matrix_stat[, k] <- predictions_scalar_stat$zpredicted
