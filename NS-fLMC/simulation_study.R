@@ -232,7 +232,6 @@ create_and_save_K_structure_plot <- function() {
     scale_fill_viridis_c() +
     coord_fixed() +
     labs(title="Components of Structural Matrix K(s) in Non-Proportional Scenario",
-         subtitle="Orange diamonds mark the locations used to define the fixed K for the Proportional scenarios.",
          x="Coordinate x", y="Coordinate y", fill="Value") +
     theme_bw(base_size = 18) +
     theme(plot.title = element_text(size=22, face="bold"),
