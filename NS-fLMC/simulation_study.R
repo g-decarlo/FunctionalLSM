@@ -226,7 +226,7 @@ create_and_save_K_structure_plot <- function() {
     geom_point(data = proportional_points, aes(x, y), inherit.aes = FALSE,
                color = "#E69F00", size = 5, shape = 18) +
     geom_text_repel(data = proportional_points, aes(x, y, label = label), inherit.aes = FALSE,
-                    color = "#E69F00", size = 5, fontface = "bold",
+                    color = "#E69F00", size = 6, fontface = "bold",
                     box.padding = 0.6, point.padding = 0.6,
                     segment.color = '#E69F00', segment.size = 0.7) +
     scale_fill_viridis_c() +
@@ -234,13 +234,13 @@ create_and_save_K_structure_plot <- function() {
     labs(title="Components of Structural Matrix K(s) in Non-Proportional Scenario",
          subtitle="Orange diamonds mark the locations used to define the fixed K for the Proportional scenarios.",
          x="Coordinate x", y="Coordinate y", fill="Value") +
-    theme_bw(base_size = 16) +
-    theme(plot.title = element_text(size=18, face="bold"),
-          plot.subtitle = element_text(size=14),
-          strip.text = element_text(size=16, face="bold"),
-          axis.title = element_text(size=16, face="bold"),
-          legend.title = element_text(size=14, face="bold"),
-          legend.text = element_text(size=12))
+    theme_bw(base_size = 18) +
+    theme(plot.title = element_text(size=22, face="bold"),
+          plot.subtitle = element_text(size=18),
+          strip.text = element_text(size=18, face="bold"),
+          axis.title = element_text(size=18, face="bold"),
+          legend.title = element_text(size=16, face="bold"),
+          legend.text = element_text(size=14))
   
   ggsave("K_structure_plot.png", plot = p_K, width = 14, height = 6, dpi = 300)
   
@@ -297,15 +297,14 @@ create_and_save_merged_realization_plot <- function(n_curves_to_plot = 24, p = 2
       breaks = c(-pi, -pi/2, 0, pi/2, pi),
       labels = c(expression(-pi), expression(-pi/2), "0", expression(pi/2), expression(pi))
     ) +
-    theme_bw(base_size = 16) +
+    theme_bw(base_size = 18) +
     theme(
-      plot.title = element_text(face = "bold", size = 18),
-      plot.subtitle = element_text(size = 14),
-      axis.title = element_text(face = "bold", size = 16),
-      axis.text = element_text(size = 12),
+      plot.title = element_text(face = "bold", size = 22),
+      axis.title = element_text(face = "bold", size = 18),
+      axis.text = element_text(size = 14),
       legend.position = "bottom",
-      legend.title = element_text(size=14, face="bold"),
-      legend.text = element_text(size=12),
+      legend.title = element_text(size=16, face="bold"),
+      legend.text = element_text(size=14),
       legend.key.width = unit(2, "cm"),
       panel.grid.major = element_line(linetype = "dashed", color = "grey85"),
       panel.grid.minor = element_blank()
@@ -321,19 +320,18 @@ create_and_save_merged_realization_plot <- function(n_curves_to_plot = 24, p = 2
   p_r <- ggplot(r_s_data, aes(x, y, fill=r_s)) +
     geom_raster() +
     scale_fill_viridis_c(option = "magma", name = "r(s) Value") +
-    geom_point(data = sampled_coords_df, aes(x = x, y = y, fill = r_s_value), # Corrected aes to use x, y for scatter
-               shape = 23, size = 5, color = "white", stroke = 1.2) +
+    geom_point(data = sampled_coords_df, aes(x = x, y = y, fill = r_s_value),
+               shape = 23, size = 6, color = "white", stroke = 1.2) +
     coord_fixed() +
     labs(title="Scalar Intensity Field r(s)",
          x="Coordinate x", y="Coordinate y") +
-    theme_bw(base_size = 16) +
-    theme(plot.title = element_text(size=18, face="bold"),
-          plot.subtitle = element_text(size=14),
-          axis.title = element_text(size=16, face="bold"),
-          axis.text = element_text(size = 12),
+    theme_bw(base_size = 18) +
+    theme(plot.title = element_text(size=22, face="bold"),
+          axis.title = element_text(size=18, face="bold"),
+          axis.text = element_text(size = 14),
           legend.position = "bottom",
-          legend.title = element_text(size=14, face="bold"),
-          legend.text = element_text(size=12),
+          legend.title = element_text(size=16, face="bold"),
+          legend.text = element_text(size=14),
           legend.key.width = unit(2, "cm"))
   
   legend <- get_legend(p_r)
@@ -341,7 +339,7 @@ create_and_save_merged_realization_plot <- function(n_curves_to_plot = 24, p = 2
   p_r <- p_r + theme(legend.position = "none")
   p_funcs <- p_funcs + theme(legend.position = "none")
   
-  plot_row <- plot_grid(p_r, p_funcs, ncol = 2, labels = "AUTO", label_size = 20, align = "h")
+  plot_row <- plot_grid(p_r, p_funcs, ncol = 2, labels = "AUTO", label_size = 22, align = "h")
   
   p_combined <- plot_grid(plot_row, legend, ncol = 1, rel_heights = c(1, 0.15))
   
@@ -349,14 +347,9 @@ create_and_save_merged_realization_plot <- function(n_curves_to_plot = 24, p = 2
   cat("--- Merged realization plot saved to realizations_and_intensity_map.png ---\n")
 }
 
-
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
 
-# ---!!--- CONTROL FLAG ---!!---
-# Set to TRUE to run the full, long simulation.
-# Set to FALSE to only generate the setup plots.
 RUN_FULL_SIMULATION <- FALSE
-# ---!!--------------------!!---
 
 set_seed = 0
 set.seed(set_seed) # for reproducibility
@@ -485,15 +478,15 @@ if (RUN_FULL_SIMULATION) {
       x = "Number of Training Points (N_train)",
       y = NULL
     ) +
-    theme_bw(base_size = 14) +
+    theme_bw(base_size = 16) +
     theme(
       legend.position = "none",
-      plot.title = element_text(face = "bold", size = 16),
-      plot.subtitle = element_text(size = 12),
-      strip.text.x = element_text(face = "bold", size = 9.5),
-      strip.text.y = element_text(face = "bold", size = 12),
+      plot.title = element_text(face = "bold", size = 20),
+      plot.subtitle = element_text(size = 16),
+      strip.text.x = element_text(face = "bold", size = 12),
+      strip.text.y = element_text(face = "bold", size = 16),
       strip.placement = "outside",
-      axis.title.x = element_text(face = "bold", margin = margin(t = 10)),
+      axis.title.x = element_text(face = "bold", size = 16, margin = margin(t = 10)),
       axis.text.x = element_text(angle = 0, hjust = 0.5),
       panel.grid.minor = element_blank()
     )
