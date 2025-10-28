@@ -1,6 +1,6 @@
 # --- SECTION 1: SCRIPT SETUP ---
 library(devtools)
-# install_github("g-decarlo/FunctionalLSM") # Assumes this is already installed
+# install_github("g-decarlo/FunctionalLSM")
 library(LocallyStationaryModels)
 
 # Install missing packages if necessary
@@ -44,15 +44,15 @@ generate_scenario_parameters <- function(coords,
   
   # Scenario-Specific Structural Matrix K(s)
   if (scenario == "non-proportional") {
-    K11 <- 2 - x;  K12 <- 0
-    K21 <- -2;     K22 <- 2 + y
+    K11 <- 2 - x; K12 <- 0
+    K21 <- -2; 	  K22 <- 2 + y
   } else {
     fixed_coords <- switch(scenario,
                            "prop_center" = c(0, 0),
-                           "prop_v1"     = c(-1, -1),
-                           "prop_v2"     = c(1, -1),
-                           "prop_v3"     = c(-1, 1),
-                           "prop_v4"     = c(1, 1)
+                           "prop_v1"	   = c(-1, -1),
+                           "prop_v2"	   = c(1, -1),
+                           "prop_v3"	   = c(-1, 1),
+                           "prop_v4"	   = c(1, 1)
     )
     x_fixed <- fixed_coords[1]; y_fixed <- fixed_coords[2]
     K_fixed <- matrix(c(2 - x_fixed, -2, 0, 2 + y_fixed), nrow = 2)
@@ -67,7 +67,7 @@ generate_scenario_parameters <- function(coords,
   
   params_for_sampling <- as.matrix(data.frame(
     lambda1 = lambda1, lambda2 = lambda2, phi = phi,
-    A11 = A11, A21 = A21, A22 = A22
+    A11 = A11, A12 = A12, A21 = A21, A22 = A22
   ))
   
   params_list <- lapply(1:n_pts, function(i) {
@@ -135,7 +135,9 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
   for (i in 1:N_train) {
     for (j in i:N_train) {
       R_ns_ij <- compute_R_NS(train_coords[i,], train_coords[j,], train_params[[i]], train_params[[j]])
-      C_ij_op <- train_params[[i]]$A %*% t(train_params[[j]]$A) * R_ns_ij
+      # --- BUG FIX: Swapped i and j ---
+      # Original: C_ij_op <- train_params[[i]]$A %*% t(train_params[[j]]$A) * R_ns_ij
+      C_ij_op <- train_params[[j]]$A %*% t(train_params[[i]]$A) * R_ns_ij
       idx_i <- ((i - 1) * p + 1):(i * p); idx_j <- ((j - 1) * p + 1):(j * p)
       C_block_train_Op[idx_i, idx_j] <- C_ij_op
       if (i != j) C_block_train_Op[idx_j, idx_i] <- t(C_ij_op)
@@ -144,7 +146,7 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
   inv_C_block_train_Op <- chol2inv(chol(C_block_train_Op + diag(nugget, N_train * p)))
   
   sigma_train <- sapply(train_params, function(param) sqrt(sum(diag(param$A %*% t(param$A)))))
-  sigma_test  <- sapply(test_params,  function(param) sqrt(sum(diag(param$A %*% t(param$A)))))
+  sigma_test <- sapply(test_params, function(param) sqrt(sum(diag(param$A %*% t(param$A)))))
   
   C_trace_train <- matrix(0, nrow = N_train * p, ncol = N_train * p)
   for (i in 1:N_train) {
@@ -166,7 +168,10 @@ run_simulation <- function(scenario, M_repetitions = 50, N_train = 100, p = 2, n
     for (j in 1:N_test) {
       R_ns_ij <- compute_R_NS(train_coords[i,], test_coords[j,], train_params[[i]], test_params[[j]])
       idx_i <- ((i-1)*p + 1):(i*p); idx_j <- ((j-1)*p + 1):(j*p)
-      C_block_traintest_Op[idx_i, idx_j] <- train_params[[i]]$A %*% t(test_params[[j]]$A) * R_ns_ij
+      # --- BUG FIX: Swapped i and j logic ---
+      # Original: C_block_traintest_Op[idx_i, idx_j] <- train_params[[i]]$A %*% t(test_params[[j]]$A) * R_ns_ij
+      # Cov(X_train_i, X_test_j) = A_test_j %*% t(A_train_i) * R_ij
+      C_block_traintest_Op[idx_i, idx_j] <- test_params[[j]]$A %*% t(train_params[[i]]$A) * R_ns_ij
       C_trace_ij_test <- sigma_train[i] * sigma_test[j] * R_ns_ij
       for(k in 1:p){
         C_trace_traintest[(i-1)*p+k, (j-1)*p+k] <- C_trace_ij_test
@@ -348,7 +353,7 @@ create_and_save_merged_realization_plot <- function(n_curves_to_plot = 24, p = 2
 
 # --- SECTION 5: MAIN EXECUTION BLOCK ---
 
-RUN_FULL_SIMULATION <- FALSE
+RUN_FULL_SIMULATION <- TRUE
 
 set_seed = 0
 set.seed(set_seed) # for reproducibility
@@ -414,11 +419,11 @@ if (RUN_FULL_SIMULATION) {
   simulation_results_labeled <- simulation_results %>%
     mutate(Scenario_Label = case_when(
       Scenario == "non-proportional" ~ "Non-Proportional\n",
-      Scenario == "prop_center"      ~ "Proportional @ (0, 0)\n ",
-      Scenario == "prop_v1"          ~ "Proportional @ (-1, -1)\n ",
-      Scenario == "prop_v2"          ~ "Proportional @ (1, -1)\n ",
-      Scenario == "prop_v3"          ~ "Proportional @ (-1, 1)\n ",
-      Scenario == "prop_v4"          ~ "Proportional @ (1, 1)\n ",
+      Scenario == "prop_center"	   ~ "Proportional @ (0, 0)\n ",
+      Scenario == "prop_v1"	 	 	 ~ "Proportional @ (-1, -1)\n ",
+      Scenario == "prop_v2"	 	 	 ~ "Proportional @ (1, -1)\n ",
+      Scenario == "prop_v3"	 	 	 ~ "Proportional @ (-1, 1)\n ",
+      Scenario == "prop_v4"	 	 	 ~ "Proportional @ (1, 1)\n ",
       TRUE ~ Scenario
     )) %>%
     mutate(Scenario_Label = factor(Scenario_Label, levels = c(
@@ -489,7 +494,7 @@ if (RUN_FULL_SIMULATION) {
       axis.text.x = element_text(angle = 0, hjust = 0.5),
       panel.grid.minor = element_blank()
     )
-  
+
   ggsave("mspe_significance_plot.png", plot = significance_plot, width = 14, height = 7, dpi = 300, bg = "white")
   
   cat("\n--- PLOT SAVED to mspe_significance_plot.png ---\n")
@@ -500,4 +505,5 @@ if (RUN_FULL_SIMULATION) {
   cat("\n--- RUN_FULL_SIMULATION is FALSE. Main simulation skipped. ---\n")
   
 }
+
 

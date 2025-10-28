@@ -8,7 +8,7 @@ set.seed(42)
 
 # Define key hyperparameters for the analysis
 map_granularity <- 150       # Resolution of the prediction grid
-station_filter_epsilon <- 0.0001 # Min distance between stations (~10m)
+station_filter_epsilon <- 0.0
 num_anchor_points <- 12        # Number of anchor points for the NS model
 
 # Load the champion model configuration and PCA results from the model selection step
@@ -247,6 +247,7 @@ ggsave("plots/Station_Map_and_Densities.png", p_station_map_combined, width = 20
 smoothed_params <- smooth.lsm(solution_full_functional, grid_pred_us_matrix)
 plot_df <- cbind(grid_pred_us, smoothed_params$parameters)
 colnames(plot_df) <- c("lon", "lat", "country", "lambda1", "lambda2", "phi", "sigma", "nugget")
+plot_df$global_std_dev <- sqrt(plot_df$sigma^2 + plot_df$nugget)
 
 p_sigma <- create_prediction_map(
   plot_data = plot_df,
@@ -303,6 +304,22 @@ p_anisotropy_and_sill_combined <- plot_grid(p_anisotropy, p_sigma, ncol = 2, ali
 
 ggsave("plots/Anisotropy_and_Sill.png", p_anisotropy_and_sill_combined, width = 20, height = 7, dpi = 300, bg = "white")
 
+p_global_std_dev <- create_prediction_map(
+  plot_data = plot_df,
+  fill_var = global_std_dev, 
+  palette = "YlOrRd", 
+  title = bquote("Spatially Varying Global Std. Dev."),
+  fill_label = expression(sigma), 
+  base_font_size = larger_base_size,
+  is_prob = FALSE,
+  legend_pos = "right"
+)
+
+p_anisotropy_and_global_std_dev_combined <- plot_grid(p_anisotropy, p_global_std_dev, ncol = 2, align = 'hv')
+
+ggsave("plots/Anisotropy_and_Global_StdDev.png", p_anisotropy_and_global_std_dev_combined, width = 20, height = 7, dpi = 300, bg = "white")
+
+
 
 heavy_rain_threshold_idx <- floor((sqrt(130) / 60) * 256)
 prob_heavy_rain_conditional <- rowSums(predicted_densities[, heavy_rain_threshold_idx:256, drop = FALSE])
@@ -346,16 +363,16 @@ shared_legend_hazard <- get_legend(p_temp_legend)
 
 # Combine Hazard Maps
 plots_row_hazard_maps <- plot_grid(
-  p_heavy_cond_no_legend, 
-  p_rain_occur_no_legend, 
-  ncol = 2, 
+  p_heavy_cond_no_legend,
+  p_rain_occur_no_legend,
+  ncol = 2,
   align = 'hv'
 )
 
 p_hazard_maps_combined <- plot_grid(
-  plots_row_hazard_maps, 
-  shared_legend_hazard, 
-  ncol = 1, 
+  plots_row_hazard_maps,
+  shared_legend_hazard,
+  ncol = 1,
   rel_heights = c(1, 0.15) # Give legend 15% of vertical space
 )
 
@@ -374,4 +391,3 @@ ggsave("plots/Hazard_Maps_Combined.png", p_hazard_maps_combined, width = 20, hei
 ggsave("plots/Total_Hazard_Map.png", p_heavy_total, width=10, height=7, dpi=300, bg = "white")
 
 cat("--- Analysis and plotting complete. Check the 'plots' directory for PNG files. ---\n")
-
